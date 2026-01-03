@@ -11,12 +11,7 @@ export const TranslationInput = ({
   value = '',
   onRef,
 }: TranslationInputProps) => {
-  const el = textarea(
-    {
-      placeholder: 'English text to translate...',
-    },
-    value,
-  );
+  const el = textarea({}, value);
 
   if (onRef) onRef(el as unknown as HTMLTextAreaElement);
 
