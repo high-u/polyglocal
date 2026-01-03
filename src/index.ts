@@ -1,17 +1,17 @@
 import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
-import { ContextSelector } from './ContextSelector';
-import { LanguageSelector } from './LanguageSelector';
-import { ModelControls } from './ModelControls';
+import { ControlPanel } from './ControlPanel';
+import { StatusDisplay } from './StatusDisplay';
 import { loadSettings, saveSettings } from './settings';
 import { Store } from './store';
-import { TranslateButton } from './TranslateButton';
 import { TranslationInput } from './TranslationInput';
 import { TranslationOutput } from './TranslationOutput';
 import { WllamaService } from './wllama';
 
-const CONTEXT_OPTIONS = [1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
+const MODEL_URL =
+  'https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/main/HY-MT1.5-1.8B-Q4_K_M.gguf';
 
+const CONTEXT_OPTIONS = [1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
 const LANGUAGES = [
   'Arabic',
   'Bengali',
@@ -49,8 +49,7 @@ const LANGUAGES = [
   'Urdu',
   'Uyghur',
   'Vietnamese',
-];
-LANGUAGES.sort();
+].sort();
 
 const { div } = tags;
 
@@ -60,28 +59,41 @@ const settings = loadSettings();
 
 let inputRef: HTMLTextAreaElement;
 let outputRef: HTMLTextAreaElement;
-let languageRef: HTMLSelectElement;
-let contextRef: HTMLSelectElement;
-let statusRef: HTMLDivElement;
 
-const renderModelControls = () =>
-  mount('model-controls-wrapper', createModelControls());
-const renderTranslateButton = () =>
-  mount('translate-button-wrapper', createTranslateButton());
+const renderControlPanel = () =>
+  mount('control-panel-root', createControlPanel());
+const renderStatusDisplay = () =>
+  mount('status-display-root', createStatusDisplay());
 
-const createModelControls = () => {
-  return ModelControls({
-    downloadProgress: store.state.downloadProgress,
+const updateApp = () => {
+  renderControlPanel();
+  renderStatusDisplay();
+};
+
+const createControlPanel = () => {
+  return ControlPanel({
     isModelCached: store.state.isModelCached,
+    isModelLoaded: store.state.isModelLoaded,
+    isTranslating: store.state.isTranslating,
+    targetLanguage: settings.targetLanguage,
+    contextSize: settings.contextSize,
+
+    // Data props
+    languages: LANGUAGES,
+    contextOptions: CONTEXT_OPTIONS,
+    modelOptions: [
+      { label: 'Tencent/HY-MT1.5-1.8B', value: 'Tencent/HY-MT1.5-1.8B' },
+    ],
+    currentModel: 'Tencent/HY-MT1.5-1.8B',
+
     onDownload: async () => {
       store.setDownloadProgress(0);
       store.setError(null);
-      renderModelControls();
-
+      updateApp();
       try {
-        await wllamaService.downloadModel((p) => {
+        await wllamaService.downloadModel(MODEL_URL, (p) => {
           store.setDownloadProgress(p);
-          renderModelControls();
+          updateApp();
         });
         store.setModelCached(true);
         store.setDownloadProgress(100);
@@ -91,48 +103,108 @@ const createModelControls = () => {
         store.setError(`Download failed: ${message}`);
         store.setDownloadProgress(0);
       }
-      renderModelControls();
-      renderTranslateButton();
+      updateApp();
     },
-    onDeleteCache: async () => {
+
+    onDelete: async () => {
       try {
-        await wllamaService.deleteCache();
-        store.setModelCached(false);
-        store.setModelLoaded(false);
+        const result = await wllamaService.deleteCache(MODEL_URL);
+        if (result.type === 'success') {
+          store.setModelCached(false);
+          store.setModelLoaded(false);
+          store.setError(null);
+        } else if (result.type === 'not_found') {
+          store.setError(
+            'Target file not found, but system record exists. Files may remain or be corrupted.',
+          );
+        } else {
+          store.setError('Delete cache failed. An unexpected error occurred.');
+        }
       } catch (e: unknown) {
+        console.error(e);
         const message = e instanceof Error ? e.message : String(e);
         store.setError(`Delete cache failed: ${message}`);
       }
-      renderModelControls();
-      renderTranslateButton();
+      updateApp();
+    },
+
+    onLoad: async () => {
+      store.setError(null); // Clear previous errors
+      updateApp();
+      try {
+        await wllamaService.loadModel(MODEL_URL, undefined, {
+          n_ctx: settings.contextSize,
+        });
+        store.setModelLoaded(true);
+      } catch (e: unknown) {
+        console.error(e);
+        const message = e instanceof Error ? e.message : String(e);
+        store.setError(`Load failed: ${message}`);
+      }
+      updateApp();
+    },
+
+    onTranslate: async () => {
+      const inputText = inputRef.value;
+      if (inputText.trim() === '') return;
+
+      store.setTranslating(true);
+      if (outputRef) outputRef.value = '';
+      updateApp();
+
+      // Save settings
+      saveSettings({
+        contextSize: settings.contextSize,
+        targetLanguage: settings.targetLanguage,
+      });
+
+      try {
+        const selectedCtx = settings.contextSize;
+        const currentLoadedCtx = wllamaService.getCurrentContextSize();
+
+        if (currentLoadedCtx !== selectedCtx) {
+          await wllamaService.reloadModel(MODEL_URL, selectedCtx);
+        }
+
+        const tokens = await wllamaService.tokenize(inputText);
+        const requiredCount = Math.floor(tokens.length * 2.5);
+
+        if (requiredCount > selectedCtx) {
+          store.setError(
+            `Capacity exceeded (Required: ${requiredCount}). Select larger context & reload.`,
+          );
+          store.setTranslating(false);
+          updateApp();
+          return;
+        }
+
+        await wllamaService.translate(
+          inputText,
+          settings.targetLanguage,
+          (currentText) => {
+            if (outputRef) outputRef.value = currentText;
+          },
+        );
+      } catch (e: unknown) {
+        console.error(e);
+        const message = e instanceof Error ? e.message : String(e);
+        store.setError(`Error: ${message}`);
+      } finally {
+        store.setTranslating(false);
+        updateApp();
+      }
+    },
+
+    onLanguageChange: (val: string) => {
+      settings.targetLanguage = val;
+      updateApp();
+    },
+
+    onContextChange: (val: number) => {
+      settings.contextSize = val;
+      updateApp();
     },
   });
-};
-
-const createLanguageSelector = () => {
-  return LanguageSelector({
-    options: LANGUAGES.sort(),
-    value: settings.targetLanguage,
-    onRef: (el) => {
-      languageRef = el;
-    },
-  });
-};
-
-const createContextSelector = () => {
-  return ContextSelector({
-    options: CONTEXT_OPTIONS,
-    value: settings.contextSize,
-    onRef: (el) => {
-      contextRef = el;
-    },
-  });
-};
-
-const StatusDisplay = () => {
-  const el = tags.div({});
-  statusRef = el as HTMLDivElement;
-  return el;
 };
 
 const createTranslationInput = () => {
@@ -153,99 +225,46 @@ const createTranslationOutput = () => {
   });
 };
 
-const updateStatus = (message: string) => {
-  if (statusRef) statusRef.innerText = message;
-};
+const createStatusDisplay = () => {
+  let message = '';
+  // Check if error message is about delete failure to show force delete button
+  const errorMsg = store.state.errorMessage;
+  const isDeleteError =
+    errorMsg?.includes('Delete cache failed') ||
+    errorMsg?.includes('Target file not found');
 
-const createTranslateButton = () => {
-  return TranslateButton({
-    isTranslating: store.state.isTranslating,
-    isModelLoaded: store.state.isModelLoaded,
-    isModelCached: store.state.isModelCached,
-    downloadProgress: store.state.downloadProgress,
-    onTranslate: async () => {
-      const inputText = inputRef.value;
-      if (inputText.trim() === '') return;
-
-      store.setTranslating(true);
-      updateStatus('');
-      renderTranslateButton();
-      outputRef.value = '';
-
-      // Save settings on translate
-      const currentContextSize = parseInt(contextRef.value, 10);
-      const currentTargetLang = languageRef.value;
-      saveSettings({
-        contextSize: currentContextSize,
-        targetLanguage: currentTargetLang,
-      });
-
-      try {
-        const selectedCtx = currentContextSize;
-        const currentLoadedCtx = wllamaService.getCurrentContextSize();
-
-        if (!store.state.isModelLoaded || currentLoadedCtx !== selectedCtx) {
-          updateStatus('Loading...');
-          if (store.state.isModelLoaded) {
-            await wllamaService.reloadModel(selectedCtx);
-          } else {
-            await wllamaService.loadModel(undefined, { n_ctx: selectedCtx });
-            store.setModelLoaded(true);
-          }
-        }
-
-        const tokens = await wllamaService.tokenize(inputText);
-        const inputCount = tokens.length;
-        const requiredCount = Math.floor(inputCount * 2.5);
-
-        if (requiredCount > selectedCtx) {
-          updateStatus(
-            `Capacity exceeded (Required: ${requiredCount}, Current: ${selectedCtx}). Please select a larger context size. Warning: Larger sizes consume more memory.`,
-          );
-          store.setTranslating(false);
-          renderTranslateButton();
-          return;
-        }
-
-        const targetLang = languageRef.value;
-        updateStatus('Translating...');
-
-        await wllamaService.translate(inputText, targetLang, (currentText) => {
-          if (outputRef) {
-            outputRef.value = currentText;
-          }
-        });
-        updateStatus('');
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        updateStatus(`Error: ${message}`);
-      } finally {
-        store.setTranslating(false);
-        renderTranslateButton();
+  const onForceDelete = isDeleteError
+    ? async () => {
+        await wllamaService.clearAllCaches();
+        store.setError(null);
+        store.setModelCached(false);
+        store.setModelLoaded(false);
+        updateApp();
       }
-    },
+    : undefined;
+
+  if (store.state.errorMessage) message = store.state.errorMessage;
+  else if (store.state.isTranslating) message = 'Translating...';
+  else if (store.state.isModelLoaded) message = 'Model Loaded. Ready.';
+  else if (store.state.isModelCached) message = 'Model Cached. Ready to Load.';
+  else message = 'Please download model.';
+
+  return StatusDisplay({
+    progress: store.state.downloadProgress,
+    message: message,
+    onForceDelete: onForceDelete,
   });
 };
 
 const App = () => {
   return div(
     { id: 'app-container' },
-    div({ id: 'model-controls-wrapper' }, createModelControls()),
+    div({ id: 'control-panel-root' }, createControlPanel()),
+    div({ id: 'status-display-root' }, createStatusDisplay()),
     div(
-      {},
-      div({ id: 'language-selector-wrapper' }, createLanguageSelector()),
-      div({ id: 'context-selector-wrapper' }, createContextSelector()),
-    ),
-    StatusDisplay(),
-    div(
-      {},
-      div(
-        {},
-        div({ id: 'translation-input-wrapper' }, createTranslationInput()),
-        div({ id: 'translation-output-wrapper' }, createTranslationOutput()),
-      ),
-      div({ id: 'translate-button-wrapper' }, createTranslateButton()),
+      { class: 'row' },
+      div({ class: 'col' }, createTranslationInput()),
+      div({ class: 'col' }, createTranslationOutput()),
     ),
   );
 };
@@ -255,8 +274,7 @@ mount('app', App());
 const init = async () => {
   const storedCache = await wllamaService.checkCacheResult();
   store.setModelCached(storedCache);
-  renderModelControls();
-  renderTranslateButton();
+  updateApp();
 };
 
 init();

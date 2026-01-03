@@ -1,18 +1,18 @@
 import { Wllama, type WllamaChatMessage } from '@wllama/wllama';
 
-const MODEL_URL =
-  'https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/main/HY-MT1.5-1.8B-Q4_K_M.gguf';
+export type DeleteResult =
+  | { type: 'success' }
+  | { type: 'error' }
+  | { type: 'not_found' };
 
 export class WllamaService {
   wllama: Wllama;
-  modelPath: string;
 
   constructor() {
     this.wllama = new Wllama({
       'single-thread/wllama.wasm': '/wllama/wllama-single.wasm',
       'multi-thread/wllama.wasm': '/wllama/wllama.wasm',
     });
-    this.modelPath = MODEL_URL;
   }
 
   currentCtxSize: number = 4096;
@@ -26,6 +26,7 @@ export class WllamaService {
   }
 
   async loadModel(
+    modelUrl: string,
     onProgress?: (progress: number) => void,
     config: { n_ctx: number } = { n_ctx: 4096 },
   ) {
@@ -33,7 +34,7 @@ export class WllamaService {
 
     this.currentCtxSize = config.n_ctx;
 
-    await this.wllama.loadModelFromUrl(MODEL_URL, {
+    await this.wllama.loadModelFromUrl(modelUrl, {
       n_ctx: config.n_ctx,
       progressCallback: ({ loaded, total }) => {
         const p = (loaded / total) * 100;
@@ -42,9 +43,9 @@ export class WllamaService {
     });
   }
 
-  async reloadModel(n_ctx: number) {
+  async reloadModel(modelUrl: string, n_ctx: number) {
     await this.wllama.exit();
-    await this.loadModel(undefined, { n_ctx });
+    await this.loadModel(modelUrl, undefined, { n_ctx });
   }
 
   async tokenize(text: string): Promise<number[]> {
@@ -54,13 +55,16 @@ export class WllamaService {
     return await this.wllama.tokenize(text);
   }
 
-  async downloadModel(onProgress: (p: number) => void): Promise<void> {
+  async downloadModel(
+    modelUrl: string,
+    onProgress: (p: number) => void,
+  ): Promise<void> {
     if (this.wllama.isModelLoaded()) {
       localStorage.setItem('model_downloaded', 'true');
       return;
     }
     try {
-      await this.wllama.loadModelFromUrl(MODEL_URL, {
+      await this.wllama.loadModelFromUrl(modelUrl, {
         progressCallback: ({ loaded, total }) => {
           const p = (loaded / total) * 100;
           onProgress(p);
@@ -73,12 +77,43 @@ export class WllamaService {
     }
   }
 
-  async deleteCache(): Promise<void> {
-    localStorage.removeItem('model_downloaded');
+  async deleteCache(modelUrl: string): Promise<DeleteResult> {
+    const filename = modelUrl.split('/').pop();
+    if (!filename) return { type: 'error' };
+
     try {
-      await caches.delete('wllama_cache');
+      const root = await navigator.storage.getDirectory();
+      const cacheDir = await root.getDirectoryHandle('cache');
+
+      let deletedCount = 0;
+      // @ts-expect-error: values() iterator might be missing in types
+      for await (const name of cacheDir.keys()) {
+        if (name.includes(filename)) {
+          await cacheDir.removeEntry(name);
+          deletedCount++;
+        }
+      }
+
+      if (deletedCount > 0) {
+        localStorage.removeItem('model_downloaded');
+        return { type: 'success' };
+      } else {
+        return { type: 'not_found' };
+      }
     } catch (e) {
-      console.warn('Could not delete cache', e);
+      console.warn('Could not delete from OPFS', e);
+      return { type: 'error' };
+    }
+  }
+
+  async clearAllCaches(): Promise<void> {
+    try {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry('cache', { recursive: true });
+    } catch (e) {
+      console.warn('Could not clear all caches', e);
+    } finally {
+      localStorage.removeItem('model_downloaded');
     }
   }
 
