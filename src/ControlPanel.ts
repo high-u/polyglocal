@@ -18,6 +18,9 @@ export interface ControlPanelProps {
   onDownload: () => void;
   onDelete: () => void;
   onLoad: () => void;
+  onUnload: () => void;
+  onAutoLoadChange: (checked: boolean) => void;
+  isAutoLoadChecked: boolean;
   onTranslate: () => void;
   onLanguageChange: (val: string) => void;
   onContextChange: (val: number) => void;
@@ -66,6 +69,29 @@ export const ControlPanel = (props: ControlPanelProps) => {
           !props.isModelCached || props.isModelLoaded ? true : undefined,
       },
       'Load',
+    ),
+    // 5. Unload Button
+    button(
+      {
+        onclick: props.onUnload,
+        disabled: !props.isModelLoaded ? true : undefined,
+      },
+      'Unload',
+    ),
+    // 6. Auto-load Checkbox
+    div(
+      { style: 'display: inline-block; margin-left: 10px;' },
+      tags.input({
+        type: 'checkbox',
+        id: 'auto-load-check',
+        checked: props.isAutoLoadChecked ? true : undefined,
+        onchange: (e: Event) =>
+          props.onAutoLoadChange((e.target as HTMLInputElement).checked),
+      }),
+      tags.label(
+        { for: 'auto-load-check', style: 'margin-left: 5px;' },
+        'Auto-load',
+      ),
     ),
     // 5. Language Selector
     div(

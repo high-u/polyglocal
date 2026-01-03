@@ -144,6 +144,27 @@ const createControlPanel = () => {
       updateApp();
     },
 
+    onUnload: async () => {
+      try {
+        await wllamaService.unloadModel();
+        store.setModelLoaded(false);
+        store.setError(null);
+      } catch (e: unknown) {
+        console.error(e);
+        const message = e instanceof Error ? e.message : String(e);
+        store.setError(`Unload failed: ${message}`);
+      }
+      updateApp();
+    },
+
+    onAutoLoadChange: (checked: boolean) => {
+      settings.autoLoad = checked;
+      saveSettings(settings); // Saving all settings
+      updateApp();
+    },
+
+    isAutoLoadChecked: settings.autoLoad,
+
     onTranslate: async () => {
       const inputText = inputRef.value;
       if (inputText.trim() === '') return;
@@ -156,6 +177,7 @@ const createControlPanel = () => {
       saveSettings({
         contextSize: settings.contextSize,
         targetLanguage: settings.targetLanguage,
+        autoLoad: settings.autoLoad,
       });
 
       try {
@@ -274,6 +296,20 @@ mount('app', App());
 const init = async () => {
   const storedCache = await wllamaService.checkCacheResult();
   store.setModelCached(storedCache);
+
+  // Auto-load logic
+  if (storedCache && settings.autoLoad) {
+    try {
+      await wllamaService.loadModel(MODEL_URL, undefined, {
+        n_ctx: settings.contextSize,
+      });
+      store.setModelLoaded(true);
+    } catch (e) {
+      console.warn('Auto-load failed:', e);
+      store.setError('Auto-load failed. Please try loading manually.');
+    }
+  }
+
   updateApp();
 };
 

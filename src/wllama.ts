@@ -48,6 +48,10 @@ export class WllamaService {
     await this.loadModel(modelUrl, undefined, { n_ctx });
   }
 
+  async unloadModel() {
+    await this.wllama.exit();
+  }
+
   async tokenize(text: string): Promise<number[]> {
     if (!this.wllama.isModelLoaded()) {
       throw new Error('Model not loaded');

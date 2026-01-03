@@ -1,6 +1,7 @@
 export interface AppSettings {
   targetLanguage: string;
   contextSize: number;
+  autoLoad: boolean;
 }
 
 const STORAGE_KEY = 'polyglocal';
@@ -8,6 +9,7 @@ const STORAGE_KEY = 'polyglocal';
 const DEFAULT_SETTINGS: AppSettings = {
   targetLanguage: 'English',
   contextSize: 4096,
+  autoLoad: false, // Default to manual load
 };
 
 export const loadSettings = (): AppSettings => {

@@ -11,7 +11,6 @@ export const TranslationOutput = ({ value, onRef }: TranslationOutputProps) => {
   const el = textarea(
     {
       readonly: '',
-      placeholder: 'Translation will appear here...',
     },
     value,
   );
