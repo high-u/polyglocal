@@ -1,6 +1,6 @@
 import { tags } from '@twiqjs/twiq';
 
-const { div, button, select, option } = tags;
+const { div, button, select, option, label, input } = tags;
 
 export interface ControlPanelProps {
   isModelCached: boolean;
@@ -28,76 +28,96 @@ export interface ControlPanelProps {
 
 export const ControlPanel = (props: ControlPanelProps) => {
   return div(
-    {},
-    // 1. Model Name (Select)
+    {
+      class: 'flex gap-m'
+    },
     div(
-      {},
-      select(
-        { disabled: true },
-        ...props.modelOptions.map((opt) =>
-          option(
-            {
-              value: opt.value,
-              selected: opt.value === props.currentModel ? true : undefined,
-            },
-            opt.label,
+      {
+        class: 'flex gap-m'
+      },
+      div (
+        {
+          class: 'flex gap-s',
+        }, 
+        select(
+          {
+            class: 'button-primary',
+            disabled: true,
+          },
+          ...props.modelOptions.map((opt) =>
+            option(
+              {
+                value: opt.value,
+                selected: opt.value === props.currentModel ? true : undefined,
+              },
+              opt.label,
+            ),
           ),
+        ),
+        button(
+          {
+            class: 'button-primary',
+            onclick: props.onDownload,
+            disabled: props.isModelCached ? true : undefined,
+          },
+          'Download',
+        ),
+        button(
+          {
+            class: 'button-primary',
+            onclick: props.onDelete,
+            disabled: !props.isModelCached ? true : undefined,
+          },
+          'Delete',
+        ),
+      ),
+      div(
+        {
+          class: 'flex gap-s',
+        },
+        button(
+          {
+            class: 'button-primary',
+            onclick: props.onLoad,
+            disabled:
+              !props.isModelCached || props.isModelLoaded ? true : undefined,
+          },
+          'Load',
+        ),
+        button(
+          {
+            class: 'button-primary',
+            onclick: props.onUnload,
+            disabled: !props.isModelLoaded ? true : undefined,
+          },
+          'Unload',
+        ),
+        label(
+          {
+            class: 'button-primary',
+            for: 'auto-load-check'
+          },
+          input(
+            {
+              class: '',
+              type: 'checkbox',
+              id: 'auto-load-check',
+              checked: props.isAutoLoadChecked ? true : undefined,
+              onchange: (e: Event) =>
+                props.onAutoLoadChange((e.target as HTMLInputElement).checked),
+            }
+          ),
+          'Auto-load',
         ),
       ),
     ),
-    // 2. Download Button
-    button(
-      {
-        onclick: props.onDownload,
-        disabled: props.isModelCached ? true : undefined,
-      },
-      'Download',
-    ),
-    // 3. Delete Button
-    button(
-      {
-        onclick: props.onDelete,
-        disabled: !props.isModelCached ? true : undefined,
-      },
-      'Delete',
-    ),
-    // 4. Load Button
-    button(
-      {
-        onclick: props.onLoad,
-        disabled:
-          !props.isModelCached || props.isModelLoaded ? true : undefined,
-      },
-      'Load',
-    ),
-    // 5. Unload Button
-    button(
-      {
-        onclick: props.onUnload,
-        disabled: !props.isModelLoaded ? true : undefined,
-      },
-      'Unload',
-    ),
-    // 6. Auto-load Checkbox
     div(
-      { style: 'display: inline-block; margin-left: 10px;' },
-      tags.input({
-        type: 'checkbox',
-        id: 'auto-load-check',
-        checked: props.isAutoLoadChecked ? true : undefined,
-        onchange: (e: Event) =>
-          props.onAutoLoadChange((e.target as HTMLInputElement).checked),
-      }),
-      tags.label(
-        { for: 'auto-load-check', style: 'margin-left: 5px;' },
-        'Auto-load',
-      ),
-    ),
-    // 5. Language Selector
-    div(
-      {},
+      {
+        class: 'grow flex gap-s',
+      },
       select(
         {
+          class: 'button-primary',
           onchange: (e: Event) =>
             props.onLanguageChange((e.target as HTMLSelectElement).value),
         },
@@ -111,12 +131,9 @@ export const ControlPanel = (props: ControlPanelProps) => {
           ),
         ),
       ),
-    ),
-    // 6. Context Size Selector
-    div(
-      {},
       select(
         {
+          class: 'button-primary',
           onchange: (e: Event) =>
             props.onContextChange(
               parseInt((e.target as HTMLSelectElement).value, 10),
@@ -132,15 +149,15 @@ export const ControlPanel = (props: ControlPanelProps) => {
           ),
         ),
       ),
-    ),
-    // 7. Translate Button
-    button(
-      {
-        onclick: props.onTranslate,
-        disabled:
-          !props.isModelLoaded || props.isTranslating ? true : undefined,
-      },
-      'Translate',
+      button(
+        {
+          class: 'grow width-100 button-primary',
+          onclick: props.onTranslate,
+          disabled:
+            !props.isModelLoaded || props.isTranslating ? true : undefined,
+        },
+        'Translate',
+      ),
     ),
   );
 };

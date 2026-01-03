@@ -14,7 +14,9 @@ export const StatusDisplay = ({
   onForceDelete,
 }: StatusDisplayProps) => {
   return div(
-    {},
+    {
+      class: 'message',
+    },
     // 1. Download Progress Bar (Show if progress > 0 && < 100)
     progress > 0 && progress < 100
       ? div(

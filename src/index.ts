@@ -51,7 +51,7 @@ const LANGUAGES = [
   'Vietnamese',
 ].sort();
 
-const { div } = tags;
+const { div, main, } = tags;
 
 const store = new Store();
 const wllamaService = new WllamaService();
@@ -280,13 +280,43 @@ const createStatusDisplay = () => {
 
 const App = () => {
   return div(
-    { id: 'app-container' },
-    div({ id: 'control-panel-root' }, createControlPanel()),
-    div({ id: 'status-display-root' }, createStatusDisplay()),
-    div(
-      { class: 'row' },
-      div({ class: 'col' }, createTranslationInput()),
-      div({ class: 'col' }, createTranslationOutput()),
+    {
+      class: 'flex-col height-100',
+    },
+    main(
+      {
+        id: 'app-container',
+        class: 'grow flex-col gap-s height-100 p-m',
+      },
+      div(
+        {
+          class: 'flex gap-l',
+        },
+        div(
+          {
+            class: 'text-base p-y-s',
+          },
+          'POLYGLOCAL'
+        ),
+        div(
+          {
+            id: 'control-panel-root',
+            class: 'grow',
+          },
+          createControlPanel()
+        ),
+      ),
+      div(
+        { id: 'status-display-root' },
+        createStatusDisplay()
+      ),
+      div(
+        {
+          class: 'flex gap-s grow',
+        },
+        createTranslationInput(),
+        createTranslationOutput(),
+      ),
     ),
   );
 };
