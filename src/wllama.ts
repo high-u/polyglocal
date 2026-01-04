@@ -75,6 +75,7 @@ export class WllamaService {
         },
       });
       localStorage.setItem('model_downloaded', 'true');
+      await this.wllama.exit();
     } catch (e) {
       console.error(e);
       throw e;

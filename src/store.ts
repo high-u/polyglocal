@@ -1,10 +1,15 @@
+export type AppStatus =
+  | 'INITIAL' // Not cached, showing download UI
+  | 'DOWNLOADING' // Downloading model
+  | 'READY' // Cached, showing Ready message
+  | 'SETTINGS' // Cached, showing Settings UI
+  | 'TRANSLATING'; // Translating
+
 export interface State {
-  isModelCached: boolean;
-  isModelLoaded: boolean;
-  isTranslating: boolean;
+  status: AppStatus;
   downloadProgress: number;
   errorMessage: string | null;
-  warningMessage: string | null;
+  isInitialized: boolean;
 }
 
 export class Store {
@@ -12,25 +17,15 @@ export class Store {
 
   constructor() {
     this.state = {
-      isModelCached: false,
-      isModelLoaded: false,
-      isTranslating: false,
+      status: 'INITIAL',
       downloadProgress: 0,
       errorMessage: null,
-      warningMessage: null,
+      isInitialized: false,
     };
   }
 
-  setModelCached(cached: boolean) {
-    this.state.isModelCached = cached;
-  }
-
-  setModelLoaded(loaded: boolean) {
-    this.state.isModelLoaded = loaded;
-  }
-
-  setTranslating(translating: boolean) {
-    this.state.isTranslating = translating;
+  setStatus(status: AppStatus) {
+    this.state.status = status;
   }
 
   setDownloadProgress(progress: number) {
@@ -41,7 +36,7 @@ export class Store {
     this.state.errorMessage = error;
   }
 
-  setWarning(warning: string | null) {
-    this.state.warningMessage = warning;
+  setInitialized(initialized: boolean) {
+    this.state.isInitialized = initialized;
   }
 }

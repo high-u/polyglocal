@@ -1,145 +1,120 @@
-import { tags } from '@twiqjs/twiq';
+import { tags, tagsSvg } from '@twiqjs/twiq';
+import type { AppStatus } from './store';
 
 const { div, button, select, option } = tags;
+const { svg, path } = tagsSvg;
 
 export interface ControlPanelProps {
-  isModelCached: boolean;
-  isModelLoaded: boolean;
-  isTranslating: boolean;
+  status: AppStatus;
   targetLanguage: string;
   contextSize: number;
 
   // Data props
-  languages: string[];
+  languages: { name: string; code: string }[];
   contextOptions: number[];
-  modelOptions: { label: string; value: string }[];
-  currentModel: string;
 
-  onDownload: () => void;
-  onDelete: () => void;
-  onLoad: () => void;
-  onUnload: () => void;
-  onAutoLoadChange: (checked: boolean) => void;
-  isAutoLoadChecked: boolean;
   onTranslate: () => void;
   onLanguageChange: (val: string) => void;
   onContextChange: (val: number) => void;
 }
 
+type ControlConfig = {
+  langSelect: boolean;
+  ctxSelect: boolean;
+  translateBtn: boolean;
+};
+
+const CONFIGS: Record<string, ControlConfig> = {
+  DISABLED: {
+    langSelect: true, // true = disabled
+    ctxSelect: true,
+    translateBtn: true,
+  },
+  ENABLED: {
+    langSelect: false,
+    ctxSelect: false,
+    translateBtn: false,
+  },
+};
+
+const resolveControlConfig = (status: AppStatus): ControlConfig => {
+  switch (status) {
+    case 'INITIAL':
+    case 'DOWNLOADING':
+    case 'TRANSLATING':
+      return CONFIGS.DISABLED;
+    case 'READY':
+    case 'SETTINGS':
+      return CONFIGS.ENABLED;
+    default:
+      return CONFIGS.DISABLED;
+  }
+};
+
 export const ControlPanel = (props: ControlPanelProps) => {
+  const config = resolveControlConfig(props.status);
+
   return div(
-    {},
-    // 1. Model Name (Select)
-    div(
-      {},
-      select(
-        { disabled: true },
-        ...props.modelOptions.map((opt) =>
-          option(
-            {
-              value: opt.value,
-              selected: opt.value === props.currentModel ? true : undefined,
-            },
-            opt.label,
-          ),
-        ),
-      ),
-    ),
-    // 2. Download Button
-    button(
+    {
+      class: 'flex flex-end gap-s items-end',
+    },
+    select(
       {
-        onclick: props.onDownload,
-        disabled: props.isModelCached ? true : undefined,
-      },
-      'Download',
-    ),
-    // 3. Delete Button
-    button(
-      {
-        onclick: props.onDelete,
-        disabled: !props.isModelCached ? true : undefined,
-      },
-      'Delete',
-    ),
-    // 4. Load Button
-    button(
-      {
-        onclick: props.onLoad,
-        disabled:
-          !props.isModelCached || props.isModelLoaded ? true : undefined,
-      },
-      'Load',
-    ),
-    // 5. Unload Button
-    button(
-      {
-        onclick: props.onUnload,
-        disabled: !props.isModelLoaded ? true : undefined,
-      },
-      'Unload',
-    ),
-    // 6. Auto-load Checkbox
-    div(
-      { style: 'display: inline-block; margin-left: 10px;' },
-      tags.input({
-        type: 'checkbox',
-        id: 'auto-load-check',
-        checked: props.isAutoLoadChecked ? true : undefined,
+        class: 'button-primary p-x-m p-y-s',
+        disabled: config.langSelect ? true : undefined,
         onchange: (e: Event) =>
-          props.onAutoLoadChange((e.target as HTMLInputElement).checked),
-      }),
-      tags.label(
-        { for: 'auto-load-check', style: 'margin-left: 5px;' },
-        'Auto-load',
-      ),
-    ),
-    // 5. Language Selector
-    div(
-      {},
-      select(
-        {
-          onchange: (e: Event) =>
-            props.onLanguageChange((e.target as HTMLSelectElement).value),
-        },
-        ...props.languages.map((lang) =>
-          option(
-            {
-              value: lang,
-              selected: lang === props.targetLanguage ? true : undefined,
-            },
-            lang,
-          ),
+          props.onLanguageChange((e.target as HTMLSelectElement).value),
+      },
+      ...props.languages.map((lang) =>
+        option(
+          {
+            value: lang.name,
+            selected: lang.name === props.targetLanguage ? true : undefined,
+          },
+          lang.code,
         ),
       ),
     ),
-    // 6. Context Size Selector
-    div(
-      {},
-      select(
-        {
-          onchange: (e: Event) =>
-            props.onContextChange(
-              parseInt((e.target as HTMLSelectElement).value, 10),
-            ),
-        },
-        ...props.contextOptions.map((size) =>
-          option(
-            {
-              value: size,
-              selected: size === props.contextSize ? true : undefined,
-            },
-            size.toString(),
+    select(
+      {
+        class: 'button-primary p-x-m p-y-s',
+        disabled: config.ctxSelect ? true : undefined,
+        onchange: (e: Event) =>
+          props.onContextChange(
+            parseInt((e.target as HTMLSelectElement).value, 10),
           ),
+      },
+      ...props.contextOptions.map((size) =>
+        option(
+          {
+            value: size,
+            selected: size === props.contextSize ? true : undefined,
+          },
+          size.toString(),
         ),
       ),
     ),
-    // 7. Translate Button
     button(
       {
+        class: 'flex center gap-s button-primary p-x-m p-y-s',
         onclick: props.onTranslate,
-        disabled:
-          !props.isModelLoaded || props.isTranslating ? true : undefined,
+        disabled: config.translateBtn ? true : undefined,
       },
+      svg(
+        {
+          xmlns: 'http://www.w3.org/2000/svg',
+          fill: 'none',
+          viewBox: '0 0 24 24',
+          'stroke-width': '1.5',
+          stroke: 'currentColor',
+          class: 'icon-s',
+        },
+        path({
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'm10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802',
+        }),
+      ),
       'Translate',
     ),
   );
