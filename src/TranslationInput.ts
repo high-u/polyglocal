@@ -11,15 +11,9 @@ export const TranslationInput = ({
   value = '',
   onRef,
 }: TranslationInputProps) => {
-  const el = textarea(
-    { class: 'height-100 width-100' },
-    value
-  );
+  const el = textarea({ class: 'height-100 width-100 resize-none' }, value);
 
   if (onRef) onRef(el as unknown as HTMLTextAreaElement);
 
-  return div(
-    { class: 'grow' },
-    el
-  );
+  return div({ class: 'grow' }, el);
 };

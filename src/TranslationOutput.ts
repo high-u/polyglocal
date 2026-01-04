@@ -10,7 +10,7 @@ export interface TranslationOutputProps {
 export const TranslationOutput = ({ value, onRef }: TranslationOutputProps) => {
   const el = textarea(
     {
-      class: 'height-100  width-100',
+      class: 'height-100 width-100 resize-none',
       readonly: '',
     },
     value,
@@ -20,8 +20,5 @@ export const TranslationOutput = ({ value, onRef }: TranslationOutputProps) => {
     onRef(el as unknown as HTMLTextAreaElement);
   }
 
-  return div(
-    { class: 'grow' },
-    el
-  );
+  return div({ class: 'grow' }, el);
 };

@@ -1,6 +1,7 @@
 import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
 import { ControlPanel } from './ControlPanel';
+import { ModelButton } from './ModelButton';
 import { StatusDisplay } from './StatusDisplay';
 import { loadSettings, saveSettings } from './settings';
 import { Store } from './store';
@@ -8,50 +9,50 @@ import { TranslationInput } from './TranslationInput';
 import { TranslationOutput } from './TranslationOutput';
 import { WllamaService } from './wllama';
 
-const MODEL_URL =
+const DEFAULT_MODEL_URL =
   'https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/main/HY-MT1.5-1.8B-Q4_K_M.gguf';
 
 const CONTEXT_OPTIONS = [1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
 const LANGUAGES = [
-  'Arabic',
-  'Bengali',
-  'Burmese',
-  'Chinese',
-  'Czech',
-  'Dutch',
-  'English',
-  'French',
-  'German',
-  'Gujarati',
-  'Hebrew',
-  'Hindi',
-  'Indonesian',
-  'Italian',
-  'Japanese',
-  'Kazakh',
-  'Khmer',
-  'Korean',
-  'Malay',
-  'Marathi',
-  'Mongolian',
-  'Persian',
-  'Polish',
-  'Portuguese',
-  'Russian',
-  'Spanish',
-  'Tagalog',
-  'Tamil',
-  'Telugu',
-  'Thai',
-  'Tibetan',
-  'Turkish',
-  'Ukrainian',
-  'Urdu',
-  'Uyghur',
-  'Vietnamese',
-].sort();
+  { name: 'Arabic', code: 'AR' },
+  { name: 'Bengali', code: 'BN' },
+  { name: 'Burmese', code: 'MY' },
+  { name: 'Chinese', code: 'ZH' },
+  { name: 'Czech', code: 'CS' },
+  { name: 'Dutch', code: 'NL' },
+  { name: 'English', code: 'EN' },
+  { name: 'French', code: 'FR' },
+  { name: 'German', code: 'DE' },
+  { name: 'Gujarati', code: 'GU' },
+  { name: 'Hebrew', code: 'HE' },
+  { name: 'Hindi', code: 'HI' },
+  { name: 'Indonesian', code: 'ID' },
+  { name: 'Italian', code: 'IT' },
+  { name: 'Japanese', code: 'JA' },
+  { name: 'Kazakh', code: 'KK' },
+  { name: 'Khmer', code: 'KM' },
+  { name: 'Korean', code: 'KO' },
+  { name: 'Malay', code: 'MS' },
+  { name: 'Marathi', code: 'MR' },
+  { name: 'Mongolian', code: 'MN' },
+  { name: 'Persian', code: 'FA' },
+  { name: 'Polish', code: 'PL' },
+  { name: 'Portuguese', code: 'PT' },
+  { name: 'Russian', code: 'RU' },
+  { name: 'Spanish', code: 'ES' },
+  { name: 'Tagalog', code: 'TL' },
+  { name: 'Tamil', code: 'TA' },
+  { name: 'Telugu', code: 'TE' },
+  { name: 'Thai', code: 'TH' },
+  { name: 'Tibetan', code: 'BO' },
+  { name: 'Turkish', code: 'TR' },
+  { name: 'Ukrainian', code: 'UK' },
+  { name: 'Urdu', code: 'UR' },
+  { name: 'Uyghur', code: 'UG' },
+  { name: 'Vietnamese', code: 'VI' },
+].sort((a, b) => a.name.localeCompare(b.name));
 
-const { div, main, } = tags;
+const { div, main } = tags;
 
 const store = new Store();
 const wllamaService = new WllamaService();
@@ -59,143 +60,107 @@ const settings = loadSettings();
 
 let inputRef: HTMLTextAreaElement;
 let outputRef: HTMLTextAreaElement;
+let statusMessageRef: HTMLElement;
+let modelUrlRef: HTMLInputElement;
+let animationInterval: number | null = null;
 
 const renderControlPanel = () =>
   mount('control-panel-root', createControlPanel());
 const renderStatusDisplay = () =>
   mount('status-display-root', createStatusDisplay());
+const renderModelButton = () => mount('model-button-root', createModelButton());
 
 const updateApp = () => {
   renderControlPanel();
   renderStatusDisplay();
+  renderModelButton();
+};
+
+const createModelButton = () => {
+  const status = store.state.status;
+  const isSettingsOpen = status === 'SETTINGS';
+  const isDisabled = status === 'INITIAL' || status === 'DOWNLOADING';
+
+  return ModelButton({
+    isOpen: isSettingsOpen,
+    disabled: isDisabled,
+    onClick: () => {
+      if (status === 'SETTINGS') {
+        store.setStatus('READY');
+      } else if (status === 'READY') {
+        store.setStatus('SETTINGS');
+      }
+      updateApp();
+    },
+  });
 };
 
 const createControlPanel = () => {
   return ControlPanel({
-    isModelCached: store.state.isModelCached,
-    isModelLoaded: store.state.isModelLoaded,
-    isTranslating: store.state.isTranslating,
+    status: store.state.status,
     targetLanguage: settings.targetLanguage,
     contextSize: settings.contextSize,
-
-    // Data props
     languages: LANGUAGES,
     contextOptions: CONTEXT_OPTIONS,
-    modelOptions: [
-      { label: 'Tencent/HY-MT1.5-1.8B', value: 'Tencent/HY-MT1.5-1.8B' },
-    ],
-    currentModel: 'Tencent/HY-MT1.5-1.8B',
-
-    onDownload: async () => {
-      store.setDownloadProgress(0);
-      store.setError(null);
-      updateApp();
-      try {
-        await wllamaService.downloadModel(MODEL_URL, (p) => {
-          store.setDownloadProgress(p);
-          updateApp();
-        });
-        store.setModelCached(true);
-        store.setDownloadProgress(100);
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Download failed: ${message}`);
-        store.setDownloadProgress(0);
-      }
-      updateApp();
-    },
-
-    onDelete: async () => {
-      try {
-        const result = await wllamaService.deleteCache(MODEL_URL);
-        if (result.type === 'success') {
-          store.setModelCached(false);
-          store.setModelLoaded(false);
-          store.setError(null);
-        } else if (result.type === 'not_found') {
-          store.setError(
-            'Target file not found, but system record exists. Files may remain or be corrupted.',
-          );
-        } else {
-          store.setError('Delete cache failed. An unexpected error occurred.');
-        }
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Delete cache failed: ${message}`);
-      }
-      updateApp();
-    },
-
-    onLoad: async () => {
-      store.setError(null); // Clear previous errors
-      updateApp();
-      try {
-        await wllamaService.loadModel(MODEL_URL, undefined, {
-          n_ctx: settings.contextSize,
-        });
-        store.setModelLoaded(true);
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Load failed: ${message}`);
-      }
-      updateApp();
-    },
-
-    onUnload: async () => {
-      try {
-        await wllamaService.unloadModel();
-        store.setModelLoaded(false);
-        store.setError(null);
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Unload failed: ${message}`);
-      }
-      updateApp();
-    },
-
-    onAutoLoadChange: (checked: boolean) => {
-      settings.autoLoad = checked;
-      saveSettings(settings); // Saving all settings
-      updateApp();
-    },
-
-    isAutoLoadChecked: settings.autoLoad,
-
     onTranslate: async () => {
       const inputText = inputRef.value;
       if (inputText.trim() === '') return;
 
-      store.setTranslating(true);
+      const currentStatus = store.state.status;
+      if (
+        currentStatus === 'INITIAL' ||
+        currentStatus === 'DOWNLOADING' ||
+        currentStatus === 'TRANSLATING'
+      )
+        return;
+
+      store.setStatus('TRANSLATING');
+      store.setError(null);
       if (outputRef) outputRef.value = '';
       updateApp();
 
-      // Save settings
       saveSettings({
         contextSize: settings.contextSize,
         targetLanguage: settings.targetLanguage,
-        autoLoad: settings.autoLoad,
       });
 
-      try {
-        const selectedCtx = settings.contextSize;
-        const currentLoadedCtx = wllamaService.getCurrentContextSize();
+      const startAnimation = (baseText: string) => {
+        if (animationInterval) clearInterval(animationInterval);
+        let dots = 0;
+        const update = () => {
+          dots = dots + 1;
+          const text = baseText + '.'.repeat(dots);
+          if (statusMessageRef) {
+            mount(statusMessageRef, text);
+          }
+        };
+        update();
+        animationInterval = window.setInterval(update, 500);
+      };
 
-        if (currentLoadedCtx !== selectedCtx) {
-          await wllamaService.reloadModel(MODEL_URL, selectedCtx);
+      const stopAnimation = () => {
+        if (animationInterval) {
+          clearInterval(animationInterval);
+          animationInterval = null;
         }
+      };
+
+      try {
+        startAnimation('Load');
+        await wllamaService.loadModel(DEFAULT_MODEL_URL, undefined, {
+          n_ctx: settings.contextSize,
+        });
+
+        startAnimation('Translate');
 
         const tokens = await wllamaService.tokenize(inputText);
         const requiredCount = Math.floor(tokens.length * 2.5);
 
-        if (requiredCount > selectedCtx) {
+        if (requiredCount > settings.contextSize) {
           store.setError(
-            `Capacity exceeded (Required: ${requiredCount}). Select larger context & reload.`,
+            `Capacity exceeded (Required: ${requiredCount}). Increase context size.`,
           );
-          store.setTranslating(false);
+          store.setStatus('READY');
           updateApp();
           return;
         }
@@ -212,16 +177,20 @@ const createControlPanel = () => {
         const message = e instanceof Error ? e.message : String(e);
         store.setError(`Error: ${message}`);
       } finally {
-        store.setTranslating(false);
+        stopAnimation();
+        try {
+          await wllamaService.unloadModel();
+        } catch (e) {
+          console.error('Unload failed:', e);
+        }
+        store.setStatus('READY');
         updateApp();
       }
     },
-
     onLanguageChange: (val: string) => {
       settings.targetLanguage = val;
       updateApp();
     },
-
     onContextChange: (val: number) => {
       settings.contextSize = val;
       updateApp();
@@ -248,33 +217,82 @@ const createTranslationOutput = () => {
 };
 
 const createStatusDisplay = () => {
+  const status = store.state.status;
+
   let message = '';
-  // Check if error message is about delete failure to show force delete button
-  const errorMsg = store.state.errorMessage;
-  const isDeleteError =
-    errorMsg?.includes('Delete cache failed') ||
-    errorMsg?.includes('Target file not found');
-
-  const onForceDelete = isDeleteError
-    ? async () => {
-        await wllamaService.clearAllCaches();
-        store.setError(null);
-        store.setModelCached(false);
-        store.setModelLoaded(false);
-        updateApp();
-      }
-    : undefined;
-
   if (store.state.errorMessage) message = store.state.errorMessage;
-  else if (store.state.isTranslating) message = 'Translating...';
-  else if (store.state.isModelLoaded) message = 'Model Loaded. Ready.';
-  else if (store.state.isModelCached) message = 'Model Cached. Ready to Load.';
-  else message = 'Please download model.';
+  else if (status === 'TRANSLATING') message = 'Translating...';
+  else if (status === 'READY') message = 'Ready';
+  else message = '';
+
+  const isModelCached = status !== 'INITIAL' && status !== 'DOWNLOADING';
+  const isSettingsOpen = status === 'SETTINGS';
+  const isDownloading = status === 'DOWNLOADING';
 
   return StatusDisplay({
     progress: store.state.downloadProgress,
     message: message,
-    onForceDelete: onForceDelete,
+    errorMessage: store.state.errorMessage,
+    onMessageRef: (el) => {
+      statusMessageRef = el;
+    },
+    // Model props
+    isModelSettingsOpen: isSettingsOpen,
+    modelUrl: modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL,
+    isModelCached: isModelCached,
+    isDownloading: isDownloading,
+    onModelUrlRef: (el) => {
+      modelUrlRef = el;
+    },
+    onDownload: async () => {
+      const urlToDownload = modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL;
+
+      store.setStatus('DOWNLOADING');
+      store.setDownloadProgress(0);
+      store.setError(null);
+      updateApp();
+
+      try {
+        await wllamaService.downloadModel(urlToDownload, (p) => {
+          store.setDownloadProgress(p);
+          updateApp();
+        });
+        store.setDownloadProgress(100);
+        store.setStatus('READY');
+      } catch (e: unknown) {
+        console.error(e);
+        const message = e instanceof Error ? e.message : String(e);
+        store.setError(`Download failed: ${message}`);
+        store.setDownloadProgress(0);
+        store.setStatus('INITIAL');
+      }
+      updateApp();
+    },
+    onDelete: async () => {
+      const urlToDelete = modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL;
+
+      const executeForceDelete = async (reason: string) => {
+        console.warn(`Specific model delete failed. Reason: ${reason}`);
+        console.warn('Executing force delete (clearAllCaches) as fallback.');
+        await wllamaService.clearAllCaches();
+        store.setStatus('INITIAL');
+        store.setError(null);
+      };
+
+      try {
+        const result = await wllamaService.deleteCache(urlToDelete);
+        if (result.type === 'success') {
+          store.setStatus('INITIAL');
+          store.setError(null);
+        } else {
+          await executeForceDelete(result.type);
+        }
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        await executeForceDelete(`Exception: ${message}`);
+      }
+      updateApp();
+    },
   });
 };
 
@@ -290,26 +308,29 @@ const App = () => {
       },
       div(
         {
-          class: 'flex gap-l',
+          class: 'flex gap-s',
         },
         div(
           {
-            class: 'text-base p-y-s',
+            class: 'grow text-base p-y-s',
           },
-          'POLYGLOCAL'
+          'POLYGLOCAL',
+        ),
+        div(
+          {
+            id: 'model-button-root',
+          },
+          createModelButton(),
         ),
         div(
           {
             id: 'control-panel-root',
-            class: 'grow',
+            class: '',
           },
-          createControlPanel()
+          createControlPanel(),
         ),
       ),
-      div(
-        { id: 'status-display-root' },
-        createStatusDisplay()
-      ),
+      div({ id: 'status-display-root' }, createStatusDisplay()),
       div(
         {
           class: 'flex gap-s grow',
@@ -325,21 +346,14 @@ mount('app', App());
 
 const init = async () => {
   const storedCache = await wllamaService.checkCacheResult();
-  store.setModelCached(storedCache);
 
-  // Auto-load logic
-  if (storedCache && settings.autoLoad) {
-    try {
-      await wllamaService.loadModel(MODEL_URL, undefined, {
-        n_ctx: settings.contextSize,
-      });
-      store.setModelLoaded(true);
-    } catch (e) {
-      console.warn('Auto-load failed:', e);
-      store.setError('Auto-load failed. Please try loading manually.');
-    }
+  if (storedCache) {
+    store.setStatus('READY');
+  } else {
+    store.setStatus('INITIAL');
   }
 
+  store.setInitialized(true);
   updateApp();
 };
 
