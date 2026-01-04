@@ -1,14 +1,220 @@
-/* Custom styles if needed, mostly relying on beercss */
+* {
+  box-sizing: border-box;
+  font-size: 16px;
+  font-family: ui-monospace, monospace;
+}
+
 body {
   height: 100vh;
   width: 100vw;
   margin: 0;
-  overflow: hidden;
-  /* App-like feel */
+  padding: 0;
+  background-color: #000;
 }
 
 #app {
   height: 100%;
+  background-color: #000;
+}
+
+.height-100 {
+  height: 100%;
+}
+.width-100 {
+  width: 100%;
+}
+
+.p-xs {
+  padding: 4px;
+}
+.p-s {
+  padding: 8px;
+}
+.p-m {
+  padding: 16px;
+}
+.p-l {
+  padding: 32px;
+}
+.p-xl {
+  padding: 64px;
+}
+
+.p-x-xs {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.p-x-s {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.p-x-m {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.p-x-l {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+.p-x-xl {
+  padding-left: 64px;
+  padding-right: 64px;
+}
+
+.p-y-xs {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.p-y-s {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.p-y-m {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.p-y-l {
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+.p-y-xl {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+
+.block {
+  display: block;
+}
+
+.flex {
+  display: flex;
+}
+.flex-col {
   display: flex;
   flex-direction: column;
+}
+.flex-end {
+  justify-content: flex-end;
+}
+.gap-s {
+  gap: 8px;
+}
+.gap-m {
+  gap: 16px;
+}
+.gap-l {
+  gap: 32px;
+}
+.grow {
+  flex-grow: 1;
+}
+
+.button-primary {
+  color: #fff;
+  background-color: #333;
+  border: 2px solid #333;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.button-primary:hover {
+  background-color: #666;
+  border: 2px solid #666;
+}
+.button-primary:disabled {
+  background-color: #000;
+  border: 2px solid #333;
+  cursor: auto;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.text-base {
+  color: #fff;
+}
+.text-base:disabled {
+  color: #666;
+}
+
+.message {
+  color: #fff;
+  padding: 8px 16px;
+  background-color: #000;
+  border: 2px solid #333;
+  border-radius: 4px;
+}
+
+.resize-none {
+  resize: none;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.icon-s {
+  width: 16px;
+  height: 16px;
+}
+
+.center {
+  justify-content: center;
+  align-items: center;
+}
+
+.none {
+  display: none;
+}
+
+.display-unset {
+  display: unset;
+}
+
+@media screen and (max-width: 640px) {
+  #app {
+    background-color: red;
+  }
+  .s\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .s\:none {
+    display: none;
+  }
+  .w-select {
+    max-width: 96px;
+  }
+}
+
+@media screen and (min-width: 641px) and (max-width: 1280px) {
+  #app {
+    background-color: blue;
+  }
+  .m\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .m\:none {
+    display: none;
+  }
+  .w-select {
+    max-width: 192px;
+  }
+}
+
+@media screen and (min-width: 1281px) {
+  #app {
+    background-color: green;
+  }
+  .l\:flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .l\:none {
+    display: none;
+  }
+  .w-select {
+    max-width: 384px;
+  }
 }
