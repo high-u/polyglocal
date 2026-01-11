@@ -19,7 +19,7 @@ export class WllamaService {
 
   /**
    * OPFS内のキャッシュディレクトリを走査し、
-   * 存在するモデルファイル（.gguf等）の名前リストを返します。
+   * 有効なモデル（メタデータと本体が存在するもの）のURLリストを返します。
    */
   async listCachedModels(): Promise<string[]> {
     try {
@@ -27,12 +27,32 @@ export class WllamaService {
       const cacheDir = await root.getDirectoryHandle('cache').catch(() => null);
       if (!cacheDir) return [];
 
-      const files: string[] = [];
+      const urls: string[] = [];
+      const keys: string[] = [];
       // @ts-expect-error: values() iterator might be missing in types
       for await (const name of cacheDir.keys()) {
-        files.push(name);
+        keys.push(name);
       }
-      return files;
+
+      for (const name of keys) {
+        if (name.startsWith('__metadata__')) {
+          const mainFileName = name.replace('__metadata__', '');
+          if (keys.includes(mainFileName)) {
+            try {
+              const fileHandle = await cacheDir.getFileHandle(name);
+              const file = await fileHandle.getFile();
+              const text = await file.text();
+              const metadata = JSON.parse(text);
+              if (metadata.originalURL) {
+                urls.push(metadata.originalURL);
+              }
+            } catch (e) {
+              console.warn('Failed to parse metadata for:', name, e);
+            }
+          }
+        }
+      }
+      return urls;
     } catch (e) {
       console.warn('Failed to list cached models:', e);
       return [];
@@ -44,12 +64,8 @@ export class WllamaService {
    * リストに含まれているかを判定します。
    */
   async isModelCached(modelUrl: string): Promise<boolean> {
-    const filename = modelUrl.split('/').pop();
-    if (!filename) return false;
-
-    const cachedFiles = await this.listCachedModels();
-    // 厳密な一致、またはファイル名が含まれているか確認
-    return cachedFiles.some((f) => f.includes(filename));
+    const cachedUrls = await this.listCachedModels();
+    return cachedUrls.includes(modelUrl);
   }
 
   getCurrentContextSize(): number {

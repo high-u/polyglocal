@@ -2,6 +2,8 @@ import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
 import { createControlPanel } from './components/ControlPanel';
 import { createModelButton } from './components/ModelButton';
+import { createModalWindow } from './components/ModalWindow';
+import { createModelsManager } from './components/ModelsManager';
 import type { AppStatus } from './components/StatusDisplay';
 import { createStatusDisplay } from './components/StatusDisplay';
 import { createTranslationInput } from './components/TranslationInput';
@@ -58,6 +60,11 @@ const { div, main } = tags;
 const store = new Store();
 const wllamaService = new WllamaService();
 const settings = loadSettings();
+
+// --- Feature: Models Management ---
+
+const modalWindow = createModalWindow();
+const modelsManager = createModelsManager({ modal: modalWindow });
 
 // --- Components Initialization ---
 
@@ -184,6 +191,7 @@ const App = () => {
           },
           'POLYGLOCAL',
         ),
+        modelsManager(),
         div(
           {
             id: 'model-button-root',
@@ -206,6 +214,7 @@ const App = () => {
         translationInput(),
         translationOutput(),
       ),
+      modalWindow(),
     ),
   );
 };
