@@ -1,19 +1,17 @@
 import { mount, tags } from '@twiqjs/twiq';
-import { WllamaService } from '../wllama';
+import { WllamaService } from '../services/wllama';
 
 const { div, button, ul, li, input, progress: progressBar, span } = tags;
 
-type ModelsManagerProps = {
-  modal: {
-    show: (content: HTMLElement) => void;
-    close: () => void;
-  };
-};
+// Pure content component, no modal dependencies
 
-export const createModelsManager = (props: ModelsManagerProps) => {
+export const createModelsManager = () => {
   const wllamaService = new WllamaService();
 
-  const createProgressBar = (props: { isDownloading: boolean; progress: number }) => {
+  const createProgressBar = (props: {
+    isDownloading: boolean;
+    progress: number;
+  }) => {
     return progressBar({
       value: props.progress,
       max: 100,
@@ -55,7 +53,8 @@ export const createModelsManager = (props: ModelsManagerProps) => {
         placeholder: 'Model URL',
         value: props.downloadUrl,
         readonly: props.isDownloading ? 'true' : undefined,
-        oninput: (e: Event) => props.onInput((e.target as HTMLInputElement).value),
+        oninput: (e: Event) =>
+          props.onInput((e.target as HTMLInputElement).value),
       }),
       button(
         {
@@ -69,21 +68,9 @@ export const createModelsManager = (props: ModelsManagerProps) => {
   };
 
   const render = () => {
-    return button(
-      {
-        class: 'button-primary',
-        onclick: async () => {
-          await renderModalContent();
-        },
-      },
-      'Models',
-    );
-  };
-
-  const renderModalContent = async () => {
     // State
     const state = {
-      models: await wllamaService.listCachedModels(),
+      models: [] as string[],
       downloadUrl: '',
       isDownloading: false,
       progress: 0,
@@ -91,39 +78,40 @@ export const createModelsManager = (props: ModelsManagerProps) => {
     };
 
     // Containers
+    const container = div({});
     const controlsContainer = div({});
     const progressContainer = div({});
     const listContainer = div({});
-    
+
     const updateProgress = () => {
       mount(
         progressContainer,
         createProgressBar({
-            isDownloading: state.isDownloading,
-            progress: state.progress
-        })
+          isDownloading: state.isDownloading,
+          progress: state.progress,
+        }),
       );
     };
 
     const handleDelete = async (url: string) => {
-        state.deletingModels = [...state.deletingModels, url];
-        updateList();
+      state.deletingModels = [...state.deletingModels, url];
+      updateList();
 
-        await wllamaService.deleteModelByUrl(url);
-        
-        state.deletingModels = state.deletingModels.filter(m => m !== url);
-        state.models = await wllamaService.listCachedModels();
-        updateList();
+      await wllamaService.deleteModelByUrl(url);
+
+      state.deletingModels = state.deletingModels.filter((m) => m !== url);
+      state.models = await wllamaService.listCachedModels();
+      updateList();
     };
 
     const updateList = () => {
       mount(
         listContainer,
         createModelList({
-            models: state.models,
-            deletingModels: state.deletingModels,
-            onDelete: handleDelete
-        })
+          models: state.models,
+          deletingModels: state.deletingModels,
+          onDelete: handleDelete,
+        }),
       );
     };
 
@@ -159,43 +147,37 @@ export const createModelsManager = (props: ModelsManagerProps) => {
     };
 
     const updateControls = () => {
-        mount(
-            controlsContainer,
-            ...createControls({
-                downloadUrl: state.downloadUrl,
-                isDownloading: state.isDownloading,
-                onInput: (val) => { state.downloadUrl = val; },
-                onDownload: handleDownload
-            })
-        );
+      mount(
+        controlsContainer,
+        ...createControls({
+          downloadUrl: state.downloadUrl,
+          isDownloading: state.isDownloading,
+          onInput: (val) => {
+            state.downloadUrl = val;
+          },
+          onDownload: handleDownload,
+        }),
+      );
     };
 
-    const container = div(
-      {},
-      div(
-        {},
-        button(
-          {
-            class: 'button-primary',
-            onclick: props.modal.close,
-          },
-          'Close',
-        ),
-      ),
-      div(
-          { class: 'p-y-m' },
-          controlsContainer,
-          progressContainer
-      ),
+    // Initial Async Load
+    wllamaService.listCachedModels().then((models) => {
+      state.models = models;
+      updateList();
+    });
+
+    // Initial Render
+    updateControls();
+    updateProgress();
+    // list is empty initially, updated after async fetch
+
+    mount(
+      container,
+      div({ class: 'p-y-m' }, controlsContainer, progressContainer),
       listContainer,
     );
 
-    // Initial fill
-    updateControls();
-    updateList();
-    updateProgress();
-
-    props.modal.show(container);
+    return container;
   };
 
   return render;

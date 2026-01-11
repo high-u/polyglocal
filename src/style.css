@@ -153,10 +153,6 @@ body {
   border-radius: 4px;
 }
 
-.resize-none {
-  resize: none;
-}
-
 .nowrap {
   white-space: nowrap;
 }
@@ -185,7 +181,7 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 999;
+  /* z-index: 999; */
   background-color: #000;
 }
 
@@ -200,9 +196,6 @@ body {
   .s\:none {
     display: none;
   }
-  .w-select {
-    max-width: 96px;
-  }
 }
 
 @media screen and (min-width: 641px) and (max-width: 1280px) {
@@ -216,9 +209,6 @@ body {
   .m\:none {
     display: none;
   }
-  .w-select {
-    max-width: 192px;
-  }
 }
 
 @media screen and (min-width: 1281px) {
@@ -231,8 +221,5 @@ body {
   }
   .l\:none {
     display: none;
-  }
-  .w-select {
-    max-width: 384px;
   }
 }

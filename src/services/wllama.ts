@@ -75,14 +75,14 @@ export class WllamaService {
   async loadModel(
     modelUrl: string,
     onProgress?: (progress: number) => void,
-    config: { n_ctx: number } = { n_ctx: 4096 },
+    config: { contextLength: number } = { contextLength: 4096 },
   ) {
     if (this.wllama.isModelLoaded()) return;
 
-    this.currentCtxSize = config.n_ctx;
+    this.currentCtxSize = config.contextLength;
 
     await this.wllama.loadModelFromUrl(modelUrl, {
-      n_ctx: config.n_ctx,
+      n_ctx: config.contextLength,
       progressCallback: ({ loaded, total }) => {
         const p = (loaded / total) * 100;
         if (onProgress) onProgress(p);
@@ -90,9 +90,9 @@ export class WllamaService {
     });
   }
 
-  async reloadModel(modelUrl: string, n_ctx: number) {
+  async reloadModel(modelUrl: string, contextLength: number) {
     await this.wllama.exit();
-    await this.loadModel(modelUrl, undefined, { n_ctx });
+    await this.loadModel(modelUrl, undefined, { contextLength });
   }
 
   async unloadModel() {
@@ -148,14 +148,21 @@ export class WllamaService {
               // Try to delete main file if exists (it might not if corrupted, but we try)
               try {
                 await cacheDir.removeEntry(mainFile);
-              } catch (e) {
-                console.warn('Could not delete main file (might be missing):', mainFile);
+              } catch (_e) {
+                console.warn(
+                  'Could not delete main file (might be missing):',
+                  mainFile,
+                );
               }
 
               return { type: 'success' };
             }
           } catch (e) {
-            console.warn('Error processing metadata file during delete:', name, e);
+            console.warn(
+              'Error processing metadata file during delete:',
+              name,
+              e,
+            );
           }
         }
       }
@@ -226,5 +233,49 @@ export class WllamaService {
     });
 
     return res;
+  }
+
+  async completion(
+    systemPrompt: string,
+    userPrompt: string,
+    modelUrl: string,
+    contextLength: number,
+    configJson: string,
+    onNewToken?: (currentText: string) => void,
+  ): Promise<string> {
+    let samplingConfig = {};
+
+    try {
+      if (configJson) {
+        samplingConfig = JSON.parse(configJson);
+      }
+    } catch (e) {
+      console.warn('Config Parse Error', e);
+    }
+
+    try {
+      if (this.wllama.isModelLoaded()) {
+        await this.unloadModel();
+      }
+
+      await this.loadModel(modelUrl, undefined, { contextLength });
+
+      const messages: WllamaChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ];
+
+      const res = await this.wllama.createChatCompletion(messages, {
+        nPredict: contextLength,
+        sampling: samplingConfig,
+        onNewToken: (_token, _piece, currentText) => {
+          if (onNewToken) onNewToken(currentText);
+        },
+      });
+
+      return res;
+    } finally {
+      await this.unloadModel();
+    }
   }
 }

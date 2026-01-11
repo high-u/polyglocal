@@ -1,5 +1,5 @@
 import { mount, tags, tagsSvg } from '@twiqjs/twiq';
-import type { WllamaService } from '../wllama';
+import type { WllamaService } from '../services/wllama';
 
 export type ControlPanelStatus =
   | 'INITIAL'
@@ -99,7 +99,7 @@ export const createControlPanel = (deps: ControlPanelDeps) => {
     try {
       // Load logic
       await deps.wllama.loadModel(deps.defaultModelUrl, undefined, {
-        n_ctx: _contextSize,
+        contextLength: _contextSize,
       });
 
       // Tokenize check

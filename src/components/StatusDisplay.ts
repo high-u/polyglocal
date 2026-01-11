@@ -1,5 +1,5 @@
 import { mount, tags } from '@twiqjs/twiq';
-import type { WllamaService } from '../wllama';
+import type { WllamaService } from '../services/wllama';
 
 export type AppStatus =
   | 'INITIAL' // Not cached, showing download UI

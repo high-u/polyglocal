@@ -1,16 +1,19 @@
 import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
 import { createControlPanel } from './components/ControlPanel';
-import { createModelButton } from './components/ModelButton';
 import { createModalWindow } from './components/ModalWindow';
-import { createModelsManager } from './components/ModelsManager';
+import { createModelButton } from './components/ModelButton';
+import { createPresetButtons } from './components/PresetButtons';
+// import { createModelsManager } from './components/ModelsManager'; // Removed
+import { createReasoningManager } from './components/ReasoningManager';
+import { createReasoningManagerButton } from './components/ReasoningManagerButton';
 import type { AppStatus } from './components/StatusDisplay';
 import { createStatusDisplay } from './components/StatusDisplay';
 import { createTranslationInput } from './components/TranslationInput';
 import { createTranslationOutput } from './components/TranslationOutput';
+import { WllamaService } from './services/wllama';
 import { loadSettings, saveSettings } from './settings';
 import { Store } from './store';
-import { WllamaService } from './wllama';
 
 const DEFAULT_MODEL_URL =
   'https://huggingface.co/LiquidAI/LFM2-350M-ENJP-MT-GGUF/resolve/main/LFM2-350M-ENJP-MT-Q8_0.gguf';
@@ -63,8 +66,8 @@ const settings = loadSettings();
 
 // --- Feature: Models Management ---
 
-const modalWindow = createModalWindow();
-const modelsManager = createModelsManager({ modal: modalWindow });
+// --- Feature: Models Management ---
+// Moved to after translationOutput instantiation to access it
 
 // --- Components Initialization ---
 
@@ -83,6 +86,24 @@ const modelButton = createModelButton({
 const translationInput = createTranslationInput();
 
 const translationOutput = createTranslationOutput();
+
+// --- Feature: Models Management & Reasoning ---
+
+const presetButtons = createPresetButtons({
+  getInput: () => translationInput.getValue(),
+  setOutput: (text) => translationOutput.setValue(text),
+});
+
+const reasoningModal = createModalWindow();
+const reasoningManagerFactory = createReasoningManager();
+
+const reasoningManagerButton = createReasoningManagerButton({
+  modal: reasoningModal,
+  getReasoningContent: reasoningManagerFactory,
+  onModalClose: () => {
+    presetButtons.refresh();
+  },
+});
 
 // --- State Update Orchestrator ---
 
@@ -191,7 +212,7 @@ const App = () => {
           },
           'POLYGLOCAL',
         ),
-        modelsManager(),
+        reasoningManagerButton(),
         div(
           {
             id: 'model-button-root',
@@ -207,6 +228,7 @@ const App = () => {
         ),
       ),
       div({ id: 'status-display-root' }, statusDisplay()),
+      div({ id: 'preset-buttons-root' }, presetButtons()),
       div(
         {
           class: 'flex gap-s grow',
@@ -214,14 +236,13 @@ const App = () => {
         translationInput(),
         translationOutput(),
       ),
-      modalWindow(),
+
+      reasoningModal(),
     ),
   );
 };
 
 mount('app', App());
-
-// --- Initialization ---
 
 const init = async () => {
   const isCached = await wllamaService.isModelCached(DEFAULT_MODEL_URL);
