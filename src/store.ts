@@ -1,9 +1,4 @@
-export type AppStatus =
-  | 'INITIAL' // Not cached, showing download UI
-  | 'DOWNLOADING' // Downloading model
-  | 'READY' // Cached, showing Ready message
-  | 'SETTINGS' // Cached, showing Settings UI
-  | 'TRANSLATING'; // Translating
+import type { AppStatus } from './components/StatusDisplay';
 
 export interface State {
   status: AppStatus;

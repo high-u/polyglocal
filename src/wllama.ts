@@ -17,8 +17,39 @@ export class WllamaService {
 
   currentCtxSize: number = 4096;
 
-  async checkCacheResult(): Promise<boolean> {
-    return localStorage.getItem('model_downloaded') === 'true';
+  /**
+   * OPFS内のキャッシュディレクトリを走査し、
+   * 存在するモデルファイル（.gguf等）の名前リストを返します。
+   */
+  async listCachedModels(): Promise<string[]> {
+    try {
+      const root = await navigator.storage.getDirectory();
+      const cacheDir = await root.getDirectoryHandle('cache').catch(() => null);
+      if (!cacheDir) return [];
+
+      const files: string[] = [];
+      // @ts-expect-error: values() iterator might be missing in types
+      for await (const name of cacheDir.keys()) {
+        files.push(name);
+      }
+      return files;
+    } catch (e) {
+      console.warn('Failed to list cached models:', e);
+      return [];
+    }
+  }
+
+  /**
+   * 指定されたモデル（URLまたはファイル名）が、
+   * リストに含まれているかを判定します。
+   */
+  async isModelCached(modelUrl: string): Promise<boolean> {
+    const filename = modelUrl.split('/').pop();
+    if (!filename) return false;
+
+    const cachedFiles = await this.listCachedModels();
+    // 厳密な一致、またはファイル名が含まれているか確認
+    return cachedFiles.some((f) => f.includes(filename));
   }
 
   getCurrentContextSize(): number {
@@ -63,10 +94,8 @@ export class WllamaService {
     modelUrl: string,
     onProgress: (p: number) => void,
   ): Promise<void> {
-    if (this.wllama.isModelLoaded()) {
-      localStorage.setItem('model_downloaded', 'true');
-      return;
-    }
+    if (this.wllama.isModelLoaded()) return;
+
     try {
       await this.wllama.loadModelFromUrl(modelUrl, {
         progressCallback: ({ loaded, total }) => {
@@ -74,7 +103,6 @@ export class WllamaService {
           onProgress(p);
         },
       });
-      localStorage.setItem('model_downloaded', 'true');
       await this.wllama.exit();
     } catch (e) {
       console.error(e);
@@ -100,7 +128,6 @@ export class WllamaService {
       }
 
       if (deletedCount > 0) {
-        localStorage.removeItem('model_downloaded');
         return { type: 'success' };
       } else {
         return { type: 'not_found' };
@@ -117,8 +144,6 @@ export class WllamaService {
       await root.removeEntry('cache', { recursive: true });
     } catch (e) {
       console.warn('Could not clear all caches', e);
-    } finally {
-      localStorage.removeItem('model_downloaded');
     }
   }
 

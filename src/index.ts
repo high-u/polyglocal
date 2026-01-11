@@ -1,16 +1,17 @@
 import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
-import { ControlPanel } from './ControlPanel';
-import { ModelButton } from './ModelButton';
-import { StatusDisplay } from './StatusDisplay';
+import { createControlPanel } from './components/ControlPanel';
+import { createModelButton } from './components/ModelButton';
+import type { AppStatus } from './components/StatusDisplay';
+import { createStatusDisplay } from './components/StatusDisplay';
+import { createTranslationInput } from './components/TranslationInput';
+import { createTranslationOutput } from './components/TranslationOutput';
 import { loadSettings, saveSettings } from './settings';
 import { Store } from './store';
-import { TranslationInput } from './TranslationInput';
-import { TranslationOutput } from './TranslationOutput';
 import { WllamaService } from './wllama';
 
 const DEFAULT_MODEL_URL =
-  'https://huggingface.co/tencent/HY-MT1.5-1.8B-GGUF/resolve/main/HY-MT1.5-1.8B-Q4_K_M.gguf';
+  'https://huggingface.co/LiquidAI/LFM2-350M-ENJP-MT-GGUF/resolve/main/LFM2-350M-ENJP-MT-Q8_0.gguf';
 
 const CONTEXT_OPTIONS = [1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072];
 const LANGUAGES = [
@@ -58,243 +59,110 @@ const store = new Store();
 const wllamaService = new WllamaService();
 const settings = loadSettings();
 
-let inputRef: HTMLTextAreaElement;
-let outputRef: HTMLTextAreaElement;
-let statusMessageRef: HTMLElement;
-let modelUrlRef: HTMLInputElement;
-let animationInterval: number | null = null;
+// --- Components Initialization ---
 
-const renderControlPanel = () =>
-  mount('control-panel-root', createControlPanel());
-const renderStatusDisplay = () =>
-  mount('status-display-root', createStatusDisplay());
-const renderModelButton = () => mount('model-button-root', createModelButton());
+const modelButton = createModelButton({
+  toggleSettings: () => {
+    const status = store.state.status;
+    if (status === 'SETTINGS') {
+      store.setStatus('READY');
+    } else if (status === 'READY') {
+      store.setStatus('SETTINGS');
+    }
+    updateState();
+  },
+});
 
-const updateApp = () => {
-  renderControlPanel();
-  renderStatusDisplay();
-  renderModelButton();
-};
+const translationInput = createTranslationInput();
 
-const createModelButton = () => {
+const translationOutput = createTranslationOutput();
+
+// --- State Update Orchestrator ---
+
+const updateState = () => {
   const status = store.state.status;
   const isSettingsOpen = status === 'SETTINGS';
   const isDisabled = status === 'INITIAL' || status === 'DOWNLOADING';
 
-  return ModelButton({
-    isOpen: isSettingsOpen,
-    disabled: isDisabled,
-    onClick: () => {
-      if (status === 'SETTINGS') {
-        store.setStatus('READY');
-      } else if (status === 'READY') {
-        store.setStatus('SETTINGS');
-      }
-      updateApp();
-    },
-  });
+  // Model Button
+  modelButton.setOpen(isSettingsOpen);
+  modelButton.setDisabled(isDisabled);
+
+  // Status Display
+  statusDisplay.setStatus(status);
+  statusDisplay.setProgress(store.state.downloadProgress);
+  statusDisplay.setError(store.state.errorMessage);
+
+  // Control Panel
+  controlPanel.updateState(status);
 };
 
-const createControlPanel = () => {
-  return ControlPanel({
-    status: store.state.status,
-    targetLanguage: settings.targetLanguage,
+// --- Callbacks for State Management ---
+
+const handleStatusChange = (status: AppStatus) => {
+  store.setStatus(status);
+  updateState();
+};
+
+const handleProgress = (progress: number) => {
+  store.setDownloadProgress(progress);
+  updateState();
+};
+
+const handleError = (error: string | null) => {
+  store.setError(error);
+  updateState();
+};
+
+// --- Settings Persistence ---
+
+const saveCurrentSettings = () => {
+  // We assume components are holding the source of truth for current selections
+  // but simpler to just persist what triggered this, or read from settings object if we updated it.
+  // Actually, we should update the local settings object and save it.
+  saveSettings({
     contextSize: settings.contextSize,
-    languages: LANGUAGES,
-    contextOptions: CONTEXT_OPTIONS,
-    onTranslate: async () => {
-      const inputText = inputRef.value;
-      if (inputText.trim() === '') return;
-
-      const currentStatus = store.state.status;
-      if (
-        currentStatus === 'INITIAL' ||
-        currentStatus === 'DOWNLOADING' ||
-        currentStatus === 'TRANSLATING'
-      )
-        return;
-
-      store.setStatus('TRANSLATING');
-      store.setError(null);
-      if (outputRef) outputRef.value = '';
-      updateApp();
-
-      saveSettings({
-        contextSize: settings.contextSize,
-        targetLanguage: settings.targetLanguage,
-      });
-
-      const startAnimation = (baseText: string) => {
-        if (animationInterval) clearInterval(animationInterval);
-        let dots = 0;
-        const update = () => {
-          dots = dots + 1;
-          const text = baseText + '.'.repeat(dots);
-          if (statusMessageRef) {
-            mount(statusMessageRef, text);
-          }
-        };
-        update();
-        animationInterval = window.setInterval(update, 500);
-      };
-
-      const stopAnimation = () => {
-        if (animationInterval) {
-          clearInterval(animationInterval);
-          animationInterval = null;
-        }
-      };
-
-      try {
-        startAnimation('Load');
-        await wllamaService.loadModel(DEFAULT_MODEL_URL, undefined, {
-          n_ctx: settings.contextSize,
-        });
-
-        startAnimation('Translate');
-
-        const tokens = await wllamaService.tokenize(inputText);
-        const requiredCount = Math.floor(tokens.length * 2.5);
-
-        if (requiredCount > settings.contextSize) {
-          store.setError(
-            `Capacity exceeded (Required: ${requiredCount}). Increase context size.`,
-          );
-          store.setStatus('READY');
-          updateApp();
-          return;
-        }
-
-        await wllamaService.translate(
-          inputText,
-          settings.targetLanguage,
-          (currentText) => {
-            if (outputRef) outputRef.value = currentText;
-          },
-        );
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Error: ${message}`);
-      } finally {
-        stopAnimation();
-        try {
-          await wllamaService.unloadModel();
-        } catch (e) {
-          console.error('Unload failed:', e);
-        }
-        store.setStatus('READY');
-        updateApp();
-      }
-    },
-    onLanguageChange: (val: string) => {
-      settings.targetLanguage = val;
-      updateApp();
-    },
-    onContextChange: (val: number) => {
-      settings.contextSize = val;
-      updateApp();
-    },
+    targetLanguage: settings.targetLanguage,
   });
 };
 
-const createTranslationInput = () => {
-  return TranslationInput({
-    value: '',
-    onRef: (el) => {
-      inputRef = el;
-    },
-  });
+const handleLanguageChange = (lang: string) => {
+  settings.targetLanguage = lang;
+  saveCurrentSettings();
 };
 
-const createTranslationOutput = () => {
-  return TranslationOutput({
-    value: '',
-    onRef: (el) => {
-      outputRef = el;
-    },
-  });
+const handleContextSizeChange = (size: number) => {
+  settings.contextSize = size;
+  saveCurrentSettings();
 };
 
-const createStatusDisplay = () => {
-  const status = store.state.status;
+const statusDisplay = createStatusDisplay({
+  wllama: wllamaService,
+  defaultModelUrl: DEFAULT_MODEL_URL,
+  onStatusChange: handleStatusChange,
+  onProgress: handleProgress,
+  onError: handleError,
+});
 
-  let message = '';
-  if (store.state.errorMessage) message = store.state.errorMessage;
-  else if (status === 'TRANSLATING') message = 'Translating...';
-  else if (status === 'READY') message = 'Ready';
-  else message = '';
+const controlPanel = createControlPanel({
+  wllama: wllamaService,
+  inputComponent: translationInput,
+  outputComponent: translationOutput,
+  languages: LANGUAGES,
+  contextOptions: CONTEXT_OPTIONS,
+  initialLanguage: settings.targetLanguage,
+  initialContextSize: settings.contextSize,
+  defaultModelUrl: DEFAULT_MODEL_URL,
+  // Callbacks
+  onStatusChange: handleStatusChange,
+  onError: handleError,
+  onLanguageChange: handleLanguageChange,
+  onContextSizeChange: handleContextSizeChange,
+  // State Getter
+  getCurrentStatus: () => store.state.status,
+});
 
-  const isModelCached = status !== 'INITIAL' && status !== 'DOWNLOADING';
-  const isSettingsOpen = status === 'SETTINGS';
-  const isDownloading = status === 'DOWNLOADING';
-
-  return StatusDisplay({
-    progress: store.state.downloadProgress,
-    message: message,
-    errorMessage: store.state.errorMessage,
-    onMessageRef: (el) => {
-      statusMessageRef = el;
-    },
-    // Model props
-    isModelSettingsOpen: isSettingsOpen,
-    modelUrl: modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL,
-    isModelCached: isModelCached,
-    isDownloading: isDownloading,
-    onModelUrlRef: (el) => {
-      modelUrlRef = el;
-    },
-    onDownload: async () => {
-      const urlToDownload = modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL;
-
-      store.setStatus('DOWNLOADING');
-      store.setDownloadProgress(0);
-      store.setError(null);
-      updateApp();
-
-      try {
-        await wllamaService.downloadModel(urlToDownload, (p) => {
-          store.setDownloadProgress(p);
-          updateApp();
-        });
-        store.setDownloadProgress(100);
-        store.setStatus('READY');
-      } catch (e: unknown) {
-        console.error(e);
-        const message = e instanceof Error ? e.message : String(e);
-        store.setError(`Download failed: ${message}`);
-        store.setDownloadProgress(0);
-        store.setStatus('INITIAL');
-      }
-      updateApp();
-    },
-    onDelete: async () => {
-      const urlToDelete = modelUrlRef ? modelUrlRef.value : DEFAULT_MODEL_URL;
-
-      const executeForceDelete = async (reason: string) => {
-        console.warn(`Specific model delete failed. Reason: ${reason}`);
-        console.warn('Executing force delete (clearAllCaches) as fallback.');
-        await wllamaService.clearAllCaches();
-        store.setStatus('INITIAL');
-        store.setError(null);
-      };
-
-      try {
-        const result = await wllamaService.deleteCache(urlToDelete);
-        if (result.type === 'success') {
-          store.setStatus('INITIAL');
-          store.setError(null);
-        } else {
-          await executeForceDelete(result.type);
-        }
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : String(e);
-        await executeForceDelete(`Exception: ${message}`);
-      }
-      updateApp();
-    },
-  });
-};
+// --- Main App Layout ---
 
 const App = () => {
   return div(
@@ -320,23 +188,23 @@ const App = () => {
           {
             id: 'model-button-root',
           },
-          createModelButton(),
+          modelButton(),
         ),
         div(
           {
             id: 'control-panel-root',
             class: '',
           },
-          createControlPanel(),
+          controlPanel(),
         ),
       ),
-      div({ id: 'status-display-root' }, createStatusDisplay()),
+      div({ id: 'status-display-root' }, statusDisplay()),
       div(
         {
           class: 'flex gap-s grow',
         },
-        createTranslationInput(),
-        createTranslationOutput(),
+        translationInput(),
+        translationOutput(),
       ),
     ),
   );
@@ -344,17 +212,19 @@ const App = () => {
 
 mount('app', App());
 
-const init = async () => {
-  const storedCache = await wllamaService.checkCacheResult();
+// --- Initialization ---
 
-  if (storedCache) {
+const init = async () => {
+  const isCached = await wllamaService.isModelCached(DEFAULT_MODEL_URL);
+
+  if (isCached) {
     store.setStatus('READY');
   } else {
     store.setStatus('INITIAL');
   }
 
   store.setInitialized(true);
-  updateApp();
+  updateState();
 };
 
 init();
