@@ -126,6 +126,46 @@ export class WllamaService {
     }
   }
 
+  async deleteModelByUrl(modelUrl: string): Promise<DeleteResult> {
+    try {
+      const root = await navigator.storage.getDirectory();
+      const cacheDir = await root.getDirectoryHandle('cache');
+
+      // @ts-expect-error: values() iterator might be missing in types
+      for await (const name of cacheDir.keys()) {
+        if (name.startsWith('__metadata__')) {
+          try {
+            const fileHandle = await cacheDir.getFileHandle(name);
+            const file = await fileHandle.getFile();
+            const text = await file.text();
+            const metadata = JSON.parse(text);
+
+            if (metadata.originalURL === modelUrl) {
+              // Found match, delete metadata and main file
+              await cacheDir.removeEntry(name);
+
+              const mainFile = name.replace('__metadata__', '');
+              // Try to delete main file if exists (it might not if corrupted, but we try)
+              try {
+                await cacheDir.removeEntry(mainFile);
+              } catch (e) {
+                console.warn('Could not delete main file (might be missing):', mainFile);
+              }
+
+              return { type: 'success' };
+            }
+          } catch (e) {
+            console.warn('Error processing metadata file during delete:', name, e);
+          }
+        }
+      }
+      return { type: 'not_found' };
+    } catch (e) {
+      console.error('Delete by URL failed:', e);
+      return { type: 'error' };
+    }
+  }
+
   async deleteCache(modelUrl: string): Promise<DeleteResult> {
     const filename = modelUrl.split('/').pop();
     if (!filename) return { type: 'error' };
