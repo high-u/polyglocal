@@ -39,7 +39,7 @@ const renderButtons = (
     ...presets.map((p) =>
       button(
         {
-          class: 'button-primary',
+          class: 'text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
           onclick: () => handleClick(p),
         },
         p.name,

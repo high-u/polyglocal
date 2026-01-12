@@ -4,13 +4,8 @@ const { textarea } = tags;
 
 export const createTranslationInput = () => {
   const el = textarea({
-    class:
-      'width-100 height-100 p-m text-base border-none resize-none bg-surface-1',
-    placeholder: 'Enter text to translate...',
-    oninput: () => {
-      // Internal value handling if needed,
-      // but value prop is sufficient since we don't re-render entire element
-    },
+    class: 'bg-yin-8 border-yin-7 round-s width-100 height-100 p-m resize-none',
+    placeholder: '',
   }) as HTMLTextAreaElement;
 
   const render = () => {

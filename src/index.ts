@@ -2,8 +2,8 @@ import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
 import { createModalWindow } from './components/ModalWindow';
 import { createPresetButtons } from './components/PresetButtons';
-import { createReasoningManager } from './components/ReasoningManager';
-import { createReasoningManagerButton } from './components/ReasoningManagerButton';
+import { createPresetManager } from './components/PresetManager';
+import { createPresetManagerButton } from './components/PresetManagerButton';
 import { createTranslationInput } from './components/TranslationInput';
 import { createTranslationOutput } from './components/TranslationOutput';
 
@@ -17,12 +17,12 @@ const presetButtons = createPresetButtons({
   setOutput: (text) => translationOutput.setValue(text),
 });
 
-const reasoningModal = createModalWindow();
-const reasoningManagerFactory = createReasoningManager();
+const presetModal = createModalWindow();
+const presetManagerFactory = createPresetManager();
 
-const reasoningManagerButton = createReasoningManagerButton({
-  modal: reasoningModal,
-  getReasoningContent: reasoningManagerFactory,
+const presetManagerButton = createPresetManagerButton({
+  modal: presetModal,
+  getPresetContent: presetManagerFactory,
   onModalClose: () => {
     presetButtons.refresh();
   },
@@ -44,22 +44,22 @@ const App = () => {
         },
         div(
           {
-            class: 'grow text-base p-y-s',
+            class: 'text-yin-2 grow',
           },
           'POLYGLOCAL',
         ),
-        reasoningManagerButton(),
+        presetManagerButton(),
       ),
       div({ id: 'preset-buttons-root' }, presetButtons()),
       div(
         {
-          class: 'flex gap-s grow',
+          class: 'flex-col gap-s grow',
         },
         translationInput(),
         translationOutput(),
       ),
 
-      reasoningModal(),
+      presetModal(),
     ),
   );
 };
