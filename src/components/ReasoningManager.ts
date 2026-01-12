@@ -7,7 +7,7 @@ import {
   type ReasoningPreset,
   updatePreset,
 } from '../services/reasoningPreset';
-import { WllamaService } from '../services/wllama';
+import { listCachedModels } from '../services/wllama';
 import { createModalWindow } from './ModalWindow';
 import { createModelsManager } from './ModelsManager';
 
@@ -132,7 +132,6 @@ const createPresetList = (props: {
 };
 
 export const createReasoningManager = () => {
-  const wllamaService = new WllamaService();
   const container = div({});
   const modelsModal = createModalWindow();
   const modelsManager = createModelsManager();
@@ -245,7 +244,7 @@ export const createReasoningManager = () => {
     };
 
     const updateDropdown = async () => {
-      state.cachedModels = await wllamaService.listCachedModels();
+      state.cachedModels = await listCachedModels();
       updateForm();
     };
 

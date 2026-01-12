@@ -1,13 +1,15 @@
 import { mount, tags } from '@twiqjs/twiq';
-import { WllamaService } from '../services/wllama';
+import {
+  deleteModelByUrl,
+  downloadModel,
+  listCachedModels,
+} from '../services/wllama';
 
 const { div, button, ul, li, input, progress: progressBar, span } = tags;
 
 // Pure content component, no modal dependencies
 
 export const createModelsManager = () => {
-  const wllamaService = new WllamaService();
-
   const createProgressBar = (props: {
     isDownloading: boolean;
     progress: number;
@@ -97,10 +99,10 @@ export const createModelsManager = () => {
       state.deletingModels = [...state.deletingModels, url];
       updateList();
 
-      await wllamaService.deleteModelByUrl(url);
+      await deleteModelByUrl(url);
 
       state.deletingModels = state.deletingModels.filter((m) => m !== url);
-      state.models = await wllamaService.listCachedModels();
+      state.models = await listCachedModels();
       updateList();
     };
 
@@ -129,7 +131,7 @@ export const createModelsManager = () => {
       updateProgress();
 
       try {
-        await wllamaService.downloadModel(state.downloadUrl, (p) => {
+        await downloadModel(state.downloadUrl, (p: number) => {
           state.progress = p;
           updateProgress();
         });
@@ -139,7 +141,7 @@ export const createModelsManager = () => {
         alert('Download failed');
       } finally {
         state.isDownloading = false;
-        state.models = await wllamaService.listCachedModels();
+        state.models = await listCachedModels();
         updateControls();
         updateProgress();
         updateList();
@@ -161,7 +163,7 @@ export const createModelsManager = () => {
     };
 
     // Initial Async Load
-    wllamaService.listCachedModels().then((models) => {
+    listCachedModels().then((models: string[]) => {
       state.models = models;
       updateList();
     });

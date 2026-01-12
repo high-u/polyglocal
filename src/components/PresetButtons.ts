@@ -1,6 +1,6 @@
 import { mount, tags } from '@twiqjs/twiq';
 import { getPresets, type ReasoningPreset } from '../services/reasoningPreset';
-import { WllamaService } from '../services/wllama';
+import { completion } from '../services/wllama';
 
 const { div, button } = tags;
 
@@ -13,7 +13,6 @@ type PresetButtonsProps = {
 const renderButtons = (
   presets: ReasoningPreset[],
   props: PresetButtonsProps,
-  wllamaService: WllamaService,
 ) => {
   const handleClick = async (preset: ReasoningPreset) => {
     const input = props.getInput();
@@ -22,7 +21,7 @@ const renderButtons = (
     props.setOutput('');
 
     try {
-      await wllamaService.completion(
+      await completion(
         preset.prompt,
         input,
         preset.model,
@@ -51,13 +50,12 @@ const renderButtons = (
 };
 
 export const createPresetButtons = (props: PresetButtonsProps) => {
-  const wllamaService = new WllamaService();
   const container = div({});
   let presets: ReasoningPreset[] = [];
 
   const refresh = () => {
     presets = getPresets();
-    mount(container, renderButtons(presets, props, wllamaService));
+    mount(container, renderButtons(presets, props));
   };
 
   // Initial render
