@@ -98,15 +98,19 @@ const createPresetForm = (props: {
 
 const createPresetList = (props: {
   presets: ReasoningPreset[];
+  cachedModels: string[];
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }) => {
   return ul(
     {},
-    ...props.presets.map((p) =>
-      li(
+    ...props.presets.map((p) => {
+      const label =
+        p.name +
+        (props.cachedModels.includes(p.model) ? '' : ' [Model Not Downloaded]');
+      return li(
         { class: 'text-base' },
-        span({}, p.name),
+        span({}, label),
         button(
           {
             class: 'button-primary',
@@ -121,8 +125,8 @@ const createPresetList = (props: {
           },
           'Delete',
         ),
-      ),
-    ),
+      );
+    }),
   );
 };
 
@@ -172,6 +176,7 @@ export const createReasoningManager = () => {
         listContainer,
         createPresetList({
           presets,
+          cachedModels: state.cachedModels,
           onEdit: handleEdit,
           onDelete: handleDelete,
         }),
@@ -235,6 +240,7 @@ export const createReasoningManager = () => {
     const updateDropdown = async () => {
       state.cachedModels = await listCachedModels();
       updateForm();
+      updateList();
     };
 
     updateDropdown();

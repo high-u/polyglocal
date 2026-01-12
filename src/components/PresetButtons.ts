@@ -1,6 +1,6 @@
 import { mount, tags } from '@twiqjs/twiq';
 import { getPresets, type ReasoningPreset } from '../services/reasoningPreset';
-import { completion } from '../services/wllama';
+import { completion, isModelCached } from '../services/wllama';
 
 const { div, button } = tags;
 
@@ -52,8 +52,12 @@ export const createPresetButtons = (props: PresetButtonsProps) => {
   const container = div({});
   let presets: ReasoningPreset[] = [];
 
-  const refresh = () => {
-    presets = getPresets();
+  const refresh = async () => {
+    const allPresets = getPresets();
+    const cachedResults = await Promise.all(
+      allPresets.map((p) => isModelCached(p.model)),
+    );
+    presets = allPresets.filter((_, i) => cachedResults[i]);
     mount(container, renderButtons(presets, props));
   };
 
