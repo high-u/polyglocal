@@ -4,7 +4,7 @@ export type ReasoningPreset = {
   model: string;
   contextLength: number;
   prompt: string;
-  config?: string; // JSON string for sampling config
+  config?: string;
 };
 
 const STORAGE_KEY = 'polyglocal-reasoning-presets';

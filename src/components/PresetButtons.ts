@@ -9,7 +9,6 @@ type PresetButtonsProps = {
   setOutput: (text: string) => void;
 };
 
-// Pure Helper
 const renderButtons = (
   presets: ReasoningPreset[],
   props: PresetButtonsProps,
@@ -58,7 +57,6 @@ export const createPresetButtons = (props: PresetButtonsProps) => {
     mount(container, renderButtons(presets, props));
   };
 
-  // Initial render
   refresh();
 
   const render = () => container;

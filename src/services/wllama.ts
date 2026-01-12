@@ -11,10 +11,6 @@ const createWllama = () =>
     'multi-thread/wllama.wasm': '/wllama/wllama.wasm',
   });
 
-/**
- * OPFS内のキャッシュディレクトリを走査し、
- * 有効なモデル（メタデータと本体が存在するもの）のURLリストを返します。
- */
 const listCachedModels = async (): Promise<string[]> => {
   try {
     const root = await navigator.storage.getDirectory();
@@ -23,8 +19,8 @@ const listCachedModels = async (): Promise<string[]> => {
 
     const urls: string[] = [];
     const keys: string[] = [];
-    // @ts-expect-error: values() iterator might be missing in types
-    for await (const name of cacheDir.keys()) {
+
+    for await (const [name] of cacheDir) {
       keys.push(name);
     }
 
@@ -53,10 +49,6 @@ const listCachedModels = async (): Promise<string[]> => {
   }
 };
 
-/**
- * 指定されたモデル（URLまたはファイル名）が、
- * リストに含まれているかを判定します。
- */
 const isModelCached = async (modelUrl: string): Promise<boolean> => {
   const cachedUrls = await listCachedModels();
   return cachedUrls.includes(modelUrl);
@@ -99,8 +91,7 @@ const deleteModelByUrl = async (modelUrl: string): Promise<DeleteResult> => {
     const root = await navigator.storage.getDirectory();
     const cacheDir = await root.getDirectoryHandle('cache');
 
-    // @ts-expect-error: values() iterator might be missing in types
-    for await (const name of cacheDir.keys()) {
+    for await (const [name] of cacheDir) {
       if (name.startsWith('__metadata__')) {
         try {
           const fileHandle = await cacheDir.getFileHandle(name);
@@ -109,11 +100,10 @@ const deleteModelByUrl = async (modelUrl: string): Promise<DeleteResult> => {
           const metadata = JSON.parse(text);
 
           if (metadata.originalURL === modelUrl) {
-            // Found match, delete metadata and main file
             await cacheDir.removeEntry(name);
 
             const mainFile = name.replace('__metadata__', '');
-            // Try to delete main file if exists (it might not if corrupted, but we try)
+
             try {
               await cacheDir.removeEntry(mainFile);
             } catch (_e) {
@@ -150,8 +140,8 @@ const deleteCache = async (modelUrl: string): Promise<DeleteResult> => {
     const cacheDir = await root.getDirectoryHandle('cache');
 
     let deletedCount = 0;
-    // @ts-expect-error: values() iterator might be missing in types
-    for await (const name of cacheDir.keys()) {
+
+    for await (const [name] of cacheDir) {
       if (name.includes(filename)) {
         await cacheDir.removeEntry(name);
         deletedCount++;

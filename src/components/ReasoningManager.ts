@@ -13,8 +13,6 @@ import { createModelsManager } from './ModelsManager';
 
 const { div, button, input, textarea, select, option, ul, li, span } = tags;
 
-// type ReasoningManagerProps removed
-
 type FormState = {
   id: string;
   name: string;
@@ -24,7 +22,6 @@ type FormState = {
   config: string;
 };
 
-// Pure Component: Preset Form
 const createPresetForm = (props: {
   state: FormState;
   models: string[];
@@ -57,7 +54,6 @@ const createPresetForm = (props: {
     }),
     select(
       {
-        class: 'w-select',
         onchange: (e: Event) =>
           props.onInput('model', (e.target as HTMLSelectElement).value),
       },
@@ -100,7 +96,6 @@ const createPresetForm = (props: {
   );
 };
 
-// Pure Component: Preset List
 const createPresetList = (props: {
   presets: ReasoningPreset[];
   onEdit: (id: string) => void;
@@ -137,7 +132,6 @@ export const createReasoningManager = () => {
   const modelsManager = createModelsManager();
 
   const render = () => {
-    // Local State (Resets on Open)
     const state = {
       form: {
         id: '',
@@ -150,11 +144,9 @@ export const createReasoningManager = () => {
       cachedModels: [] as string[],
     };
 
-    // Containers
     const formContainer = div({});
     const listContainer = div({});
 
-    // Update Helpers
     const updateForm = () => {
       mount(
         formContainer,
@@ -186,7 +178,6 @@ export const createReasoningManager = () => {
       );
     };
 
-    // Handlers
     const handleRegister = () => {
       if (!state.form.name || !state.form.model) return;
 
@@ -208,7 +199,7 @@ export const createReasoningManager = () => {
           config: state.form.config,
         });
       }
-      handleClear(); // Reset form and refresh list
+      handleClear();
     };
 
     const handleClear = () => {
@@ -221,7 +212,7 @@ export const createReasoningManager = () => {
         config: '',
       };
       updateForm();
-      updateList(); // List update needed because handleRegister calls handleClear
+      updateList();
     };
 
     const handleEdit = (id: string) => {
@@ -229,7 +220,7 @@ export const createReasoningManager = () => {
       if (target) {
         state.form = {
           ...target,
-          contextLength: target.contextLength || 4096, // Runtime safety for old data
+          contextLength: target.contextLength || 4096,
           config: target.config || '',
         };
         updateForm();
@@ -239,8 +230,6 @@ export const createReasoningManager = () => {
     const handleDelete = (id: string) => {
       deletePreset(id);
       updateList();
-      // If deleting the currently edited item, should we clear?
-      // User didn't specify. Keeping simple.
     };
 
     const updateDropdown = async () => {
@@ -248,10 +237,8 @@ export const createReasoningManager = () => {
       updateForm();
     };
 
-    // Initial Data Fetch
     updateDropdown();
 
-    // Initial Mount
     updateForm();
     updateList();
 
@@ -263,8 +250,6 @@ export const createReasoningManager = () => {
           {
             class: 'button-primary',
             onclick: () => {
-              // Show Models Manager inside the nested modal container
-              // Pass onClose callback to refresh dropdown
               const managerContent = modelsManager();
               modelsModal.show(managerContent, {
                 onClose: () => {
@@ -279,12 +264,9 @@ export const createReasoningManager = () => {
       formContainer,
       listContainer,
 
-      // IMPORTANT: Nest the internal modal container here so it renders on top
       modelsModal(),
     );
 
-    // We mount content to container and return container
-    // The parent (index.ts) will mount this container into the ModalWindow
     mount(container, content);
     return container;
   };

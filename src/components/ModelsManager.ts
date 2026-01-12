@@ -7,8 +7,6 @@ import {
 
 const { div, button, ul, li, input, progress: progressBar, span } = tags;
 
-// Pure content component, no modal dependencies
-
 export const createModelsManager = () => {
   const createProgressBar = (props: {
     isDownloading: boolean;
@@ -70,7 +68,6 @@ export const createModelsManager = () => {
   };
 
   const render = () => {
-    // State
     const state = {
       models: [] as string[],
       downloadUrl: '',
@@ -79,7 +76,6 @@ export const createModelsManager = () => {
       deletingModels: [] as string[],
     };
 
-    // Containers
     const container = div({});
     const controlsContainer = div({});
     const progressContainer = div({});
@@ -162,16 +158,13 @@ export const createModelsManager = () => {
       );
     };
 
-    // Initial Async Load
     listCachedModels().then((models: string[]) => {
       state.models = models;
       updateList();
     });
 
-    // Initial Render
     updateControls();
     updateProgress();
-    // list is empty initially, updated after async fetch
 
     mount(
       container,
