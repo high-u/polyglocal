@@ -36,7 +36,7 @@ const App = () => {
     main(
       {
         id: 'app-container',
-        class: 'grow flex-col gap-s height-100 p-m',
+        class: 'grow flex-col gap-m height-100 p-m',
       },
       div(
         {
@@ -44,7 +44,7 @@ const App = () => {
         },
         div(
           {
-            class: 'text-yin-2 grow',
+            class: 'text-yin-2 grow p-y-xs',
           },
           'POLYGLOCAL',
         ),

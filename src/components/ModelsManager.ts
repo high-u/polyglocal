@@ -5,7 +5,7 @@ import {
   listCachedModels,
 } from '../services/wllama';
 
-const { div, button, ul, li, input, progress: progressBar, span } = tags;
+const { div, button, ul, li, input, span } = tags;
 
 export const createModelsManager = () => {
   return () => {
@@ -16,7 +16,7 @@ export const createModelsManager = () => {
     }) as HTMLInputElement;
     const downloadBtn = button(
       {
-        class: 'text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
+        class: 'text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
         onclick: async () => {
           const url = urlInput.value;
           try {
@@ -27,10 +27,10 @@ export const createModelsManager = () => {
           }
           urlInput.readOnly = true;
           downloadBtn.disabled = true;
-          mount('models-progress', progressBar({ value: 0, max: 100 }));
+          urlInput.style.background = `linear-gradient(to right, var(--uchu-yin-5) 0%, var(--uchu-yin-8) 0%)`;
           try {
             await downloadModel(url, (p) => {
-              mount('models-progress', progressBar({ value: p, max: 100 }));
+              urlInput.style.background = `linear-gradient(to right, var(--uchu-yin-6) ${p}%, var(--uchu-yin-8) ${p}%)`;
             });
             urlInput.value = '';
           } catch (e) {
@@ -39,7 +39,7 @@ export const createModelsManager = () => {
           }
           urlInput.readOnly = false;
           downloadBtn.disabled = false;
-          mount('models-progress', '');
+          urlInput.style.background = '';
           updateList();
         },
       },
@@ -50,14 +50,15 @@ export const createModelsManager = () => {
       mount(
         'models-list',
         ul(
-          { class: 'list-style-none flex-col gap-s' },
+          { class: 'list-style-none flex-col gap-s p-x-0 p-y-0' },
           ...models.map((m) =>
             li(
-              { class: 'border-yin-8 p-x-m p-y-s round-s flex gap-m' },
+              { class: 'border-yin-7 p-x-m p-y-s round-s flex gap-m' },
               span({ class: 'text-yin-2' }, m),
               button(
                 {
-                  class: 'text-yin-1 bg-transparent border-none underline pointer',
+                  class:
+                    'text-yin-1 bg-transparent border-none underline pointer',
                   onclick: async () => {
                     await deleteModelByUrl(m);
                     updateList();
@@ -72,13 +73,8 @@ export const createModelsManager = () => {
     };
     updateList();
     return div(
-      { class: 'p-y-m flex-col gap-s' },
-      div(
-        { class: 'flex gap-s' },
-        urlInput,
-        downloadBtn
-      ),
-      div({ id: 'models-progress' }),
+      { class: 'p-y-m flex-col gap-m' },
+      div({ class: 'flex gap-s' }, urlInput, downloadBtn),
       div({ id: 'models-list' }),
     );
   };

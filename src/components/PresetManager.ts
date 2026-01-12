@@ -89,10 +89,10 @@ export const createPresetManager = () => {
       mount(
         'preset-list',
         ul(
-          { class: 'list-style-none flex-col gap-s' },
+          { class: 'list-style-none flex-col gap-s p-x-0 p-y-0' },
           ...presets.map((p) =>
             li(
-              { class: 'border-yin-8 p-x-m p-y-s round-s flex gap-m' },
+              { class: 'border-yin-7 p-x-m p-y-s round-s flex gap-m' },
               span(
                 { class: 'grow text-yin-2' },
                 p.name +
@@ -100,14 +100,16 @@ export const createPresetManager = () => {
               ),
               button(
                 {
-                  class: 'text-yin-1 bg-transparent border-none underline pointer',
+                  class:
+                    'text-yin-2 bg-transparent border-none underline pointer',
                   onclick: () => setForm(p.id),
                 },
                 'Edit',
               ),
               button(
                 {
-                  class: 'text-yin-1 bg-transparent border-none underline pointer',
+                  class:
+                    'text-yin-2 bg-transparent border-none underline pointer',
                   onclick: () => {
                     deletePreset(p.id);
                     updateList();
@@ -125,23 +127,24 @@ export const createPresetManager = () => {
     updateList();
 
     return div(
-      {},
-      div(
-        { class: 'flex-col gap-s p-y-m' },
-        button(
-          {
-            class: 'text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
-            onclick: () => {
-              modelsModal.show(modelsManager(), {
-                onClose: () => {
-                  updateModelOptions();
-                  updateList();
-                },
-              });
-            },
+      { class: 'flex-col gap-m p-y-m' },
+      button(
+        {
+          class:
+            'text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
+          onclick: () => {
+            modelsModal.show(modelsManager(), {
+              onClose: () => {
+                updateModelOptions();
+                updateList();
+              },
+            });
           },
-          'Manage Models',
-        ),
+        },
+        'Manage Models',
+      ),
+      div(
+        { class: 'flex-col gap-s' },
         modelSelect,
         ctxSelect,
         nameInput,
@@ -152,14 +155,16 @@ export const createPresetManager = () => {
         { class: 'flex gap-s' },
         button(
           {
-            class: 'grow text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
+            class:
+              'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
             onclick: clearForm,
           },
           'Clear',
         ),
         button(
           {
-            class: 'grow text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
+            class:
+              'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
             onclick: () => {
               const ctx = parseInt(ctxSelect.value, 10);
               if (Number.isNaN(ctx)) {

@@ -21,7 +21,7 @@ export const createPresetManagerButton = (props: PresetManagerButtonProps) => {
   const render = () => {
     return button(
       {
-        class: 'bg-yin-8 pointer border-yin-7 text-yin-2 round-s',
+        class: 'bg-yin-7 pointer border-yin-6 text-yin-2 round-s p-x-m p-y-xs',
         onclick: handleClick,
       },
       'Presets',

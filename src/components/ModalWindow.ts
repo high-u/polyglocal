@@ -18,7 +18,8 @@ export const createModalWindow = () => {
           {},
           button(
             {
-              class: 'text-yin-1 bg-yin-8 border-yin-7 pointer round-s',
+              class:
+                'text-yin-1 bg-yin-8 border-yin-7 pointer round-s p-x-m p-y-xs',
               onclick: () => render.close(),
             },
             'Close',
