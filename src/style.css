@@ -4,6 +4,11 @@
   font-family: ui-monospace, monospace;
 }
 
+textarea {
+  background-color: #333;
+  color: #eee;
+}
+
 body {
   height: 100vh;
   width: 100vw;
@@ -85,6 +90,9 @@ body {
 .block {
   display: block;
 }
+.display-unset {
+  display: unset;
+}
 
 .flex {
   display: flex;
@@ -145,10 +153,6 @@ body {
   border-radius: 4px;
 }
 
-.resize-none {
-  resize: none;
-}
-
 .nowrap {
   white-space: nowrap;
 }
@@ -171,9 +175,19 @@ body {
   display: unset;
 }
 
+.modal-window {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* z-index: 999; */
+  background-color: #000;
+}
+
 @media screen and (max-width: 640px) {
   #app {
-    background-color: red;
+    background-color: #222;
   }
   .s\:flex-col {
     display: flex;
@@ -182,14 +196,11 @@ body {
   .s\:none {
     display: none;
   }
-  .w-select {
-    max-width: 96px;
-  }
 }
 
 @media screen and (min-width: 641px) and (max-width: 1280px) {
   #app {
-    background-color: blue;
+    background-color: #222;
   }
   .m\:flex-col {
     display: flex;
@@ -198,14 +209,11 @@ body {
   .m\:none {
     display: none;
   }
-  .w-select {
-    max-width: 192px;
-  }
 }
 
 @media screen and (min-width: 1281px) {
   #app {
-    background-color: green;
+    background-color: #222;
   }
   .l\:flex-col {
     display: flex;
@@ -213,8 +221,5 @@ body {
   }
   .l\:none {
     display: none;
-  }
-  .w-select {
-    max-width: 384px;
   }
 }
