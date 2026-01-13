@@ -1,3 +1,5 @@
+@import '@fontsource/righteous';
+
 :root {
   /*** gray ***/
   --uchu-gray-1-raw: 95.57% 0.003 286.35;
@@ -196,6 +198,11 @@ body {
   height: 100vh;
   width: 100vw;
   background-color: var(--uchu-yin-9);
+}
+
+#logo {
+  font-family: 'Righteous', ui-monospace, monospace;
+  font-size: 20px;
 }
 
 #app {
@@ -502,6 +509,10 @@ button.border-yin-9:hover {
 .center {
   justify-content: center;
   align-items: center;
+}
+
+.text-align-right {
+  text-align: right;
 }
 
 .left-center {

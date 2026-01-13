@@ -15,6 +15,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@fontsource/righteous": "^5.2.7",
     "@twiqjs/twiq": "^1.3.0",
     "@wllama/wllama": "^2.3.7",
     "beercss": "^3.13.1"

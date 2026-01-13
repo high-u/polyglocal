@@ -4,7 +4,7 @@ const { textarea } = tags;
 
 export const createTranslationInput = () => {
   const el = textarea({
-    class: 'bg-yin-8 border-yin-7 round-s width-100 height-100 p-m resize-none',
+    class: 'bg-yin-8 border-yin-8 text-yin-1 round-s width-100 height-100 p-m resize-none',
     placeholder: '',
   }) as HTMLTextAreaElement;
 

@@ -8,8 +8,6 @@ import {
 } from '../services/reasoningPreset';
 import { listCachedModels } from '../services/wllama';
 
-
-
 const { div, button, input, textarea, select, option, ul, li, span } = tags;
 
 const CONTEXT_LENGTH_OPTIONS = [
@@ -17,21 +15,19 @@ const CONTEXT_LENGTH_OPTIONS = [
 ];
 
 export const createPresetManager = () => {
-
-
   return () => {
     let editId: string | undefined;
 
     // 入力欄
     const nameInput = input({
-      class: 'text-yin-1 bg-yin-8 border-yin-7 round-s',
+      class: 'text-yin-1 bg-yin-8 border-yin-8 round-s p-x-s',
       placeholder: 'Name',
     }) as HTMLInputElement;
     const modelSelect = select({
-      class: 'text-yin-1 bg-yin-8 border-yin-7 round-s',
+      class: 'text-yin-1 bg-yin-8 border-yin-8 round-s p-x-s',
     }) as HTMLSelectElement;
     const ctxSelect = select(
-      { class: 'text-yin-1 bg-yin-8 border-yin-7 round-s' },
+      { class: 'text-yin-1 bg-yin-8 border-yin-8 round-s p-x-s' },
       ...CONTEXT_LENGTH_OPTIONS.map((v) =>
         option(
           { value: String(v), selected: v === 4096 ? 'true' : undefined },
@@ -40,13 +36,13 @@ export const createPresetManager = () => {
       ),
     ) as HTMLSelectElement;
     const promptTextarea = textarea({
-      class: 'text-yin-1 bg-yin-8 border-yin-7 round-s',
-      rows: 8,
+      class: 'resize-none text-yin-1 bg-yin-8 border-yin-8 round-s p-x-s',
+      rows: 4,
       placeholder: 'System Prompt',
     }) as HTMLTextAreaElement;
     const configTextarea = textarea({
-      class: 'text-yin-1 bg-yin-8 border-yin-7 round-s',
-      rows: 8,
+      class: 'resize-none text-yin-1 bg-yin-8 border-yin-8 round-s p-x-s',
+      rows: 4,
       placeholder: 'Sampling Config (JSON)',
     }) as HTMLTextAreaElement;
 
@@ -91,7 +87,7 @@ export const createPresetManager = () => {
           { class: 'list-style-none flex-col gap-s p-x-0 p-y-0' },
           ...presets.map((p) =>
             li(
-              { class: 'border-yin-7 p-x-m p-y-s round-s flex gap-m' },
+              { class: 'border-yin-7 p-x-s p-y-s round-s flex gap-m' },
               span(
                 { class: 'grow text-yin-2' },
                 p.name +
@@ -130,18 +126,19 @@ export const createPresetManager = () => {
 
       div(
         { class: 'flex-col gap-s' },
+        nameInput,
         modelSelect,
         ctxSelect,
-        nameInput,
         promptTextarea,
         configTextarea,
       ),
       div(
         { class: 'flex gap-s' },
+        span({ class: 'grow' }),
         button(
           {
             class:
-              'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
+              'text-yin-2 bg-yin-7 border-yin-7 pointer round-s p-x-s',
             onclick: clearForm,
           },
           'Clear',
@@ -149,7 +146,7 @@ export const createPresetManager = () => {
         button(
           {
             class:
-              'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
+              'text-yin-2 bg-yin-7 border-yin-7 pointer round-s p-x-s',
             onclick: () => {
               const ctx = parseInt(ctxSelect.value, 10);
               if (Number.isNaN(ctx)) {
@@ -177,7 +174,6 @@ export const createPresetManager = () => {
         ),
       ),
       div({ id: 'preset-list' }),
-
     );
   };
 };

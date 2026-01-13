@@ -10,13 +10,13 @@ const { div, button, ul, li, input, span } = tags;
 export const createModelsManager = () => {
   return () => {
     const urlInput = input({
-      class: 'grow bg-yin-8 text-yin-2 border-yin-7 round-s',
+      class: 'grow bg-yin-8 text-yin-2 border-yin-8 round-s p-x-s',
       type: 'text',
       placeholder: 'Model URL',
     }) as HTMLInputElement;
     const downloadBtn = button(
       {
-        class: 'text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
+        class: 'text-yin-2 bg-yin-7 border-yin-7 pointer round-s p-x-s',
         onclick: async () => {
           const url = urlInput.value;
           try {
@@ -53,8 +53,8 @@ export const createModelsManager = () => {
           { class: 'list-style-none flex-col gap-s p-x-0 p-y-0' },
           ...models.map((m) =>
             li(
-              { class: 'border-yin-7 p-x-m p-y-s round-s flex gap-m' },
-              span({ class: 'text-yin-2' }, m),
+              { class: 'border-yin-7 p-x-s p-y-s round-s flex gap-m' },
+              span({ class: 'text-yin-2 grow' }, m),
               button(
                 {
                   class:

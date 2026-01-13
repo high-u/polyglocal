@@ -21,7 +21,7 @@ export const createModelsManagerButton = (props: ModelsManagerButtonProps) => {
   const render = () => {
     return button(
       {
-        class: 'bg-yin-7 pointer border-yin-6 text-yin-2 round-s p-x-m p-y-xs',
+        class: 'bg-yin-7 pointer border-yin-7 text-yin-2 round-s p-x-s',
         onclick: handleClick,
       },
       'Models',
