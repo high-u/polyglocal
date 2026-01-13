@@ -2,19 +2,17 @@ import { tags } from '@twiqjs/twiq';
 
 const { button } = tags;
 
-type ReasoningManagerButtonProps = {
+type PresetManagerButtonProps = {
   modal: {
     show: (content: HTMLElement, options?: { onClose?: () => void }) => void;
   };
-  getReasoningContent: () => HTMLElement;
+  getPresetContent: () => HTMLElement;
   onModalClose?: () => void;
 };
 
-export const createReasoningManagerButton = (
-  props: ReasoningManagerButtonProps,
-) => {
+export const createPresetManagerButton = (props: PresetManagerButtonProps) => {
   const handleClick = () => {
-    const content = props.getReasoningContent();
+    const content = props.getPresetContent();
     props.modal.show(content, {
       onClose: props.onModalClose,
     });
@@ -23,10 +21,10 @@ export const createReasoningManagerButton = (
   const render = () => {
     return button(
       {
-        class: 'button-primary',
+        class: 'bg-yin-7 pointer border-yin-6 text-yin-2 round-s p-x-m p-y-xs',
         onclick: handleClick,
       },
-      'Reasoning',
+      'Presets',
     );
   };
 

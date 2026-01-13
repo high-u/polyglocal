@@ -1,33 +1,36 @@
 import { mount, tags } from '@twiqjs/twiq';
 
-const { div } = tags;
+const { div, button } = tags;
 
 export const createModalWindow = () => {
-  const container = div({ class: 'none' });
+  const container = div({ class: 'display-contents' });
   let onCloseCallback: (() => void) | undefined;
 
-  const closeButton = tags.button(
-    {
-      class: 'button-primary',
-      onclick: () => render.close(),
-    },
-    'Close',
-  );
-
-  const render = () => {
-    return container;
-  };
+  const render = () => container;
 
   render.show = (content: HTMLElement, attrs?: { onClose?: () => void }) => {
     onCloseCallback = attrs?.onClose;
-    container.className = 'modal-window p-l';
-
-    const wrapper = div({}, closeButton, content);
-    mount(container, wrapper);
+    mount(
+      container,
+      div(
+        { class: 'modal-window p-m bg-yin-9' },
+        div(
+          {},
+          button(
+            {
+              class:
+                'text-yin-1 bg-yin-8 border-yin-7 pointer round-s p-x-m p-y-xs',
+              onclick: () => render.close(),
+            },
+            'Close',
+          ),
+          content,
+        ),
+      ),
+    );
   };
 
   render.close = () => {
-    container.className = 'none';
     mount(container, '');
     if (onCloseCallback) {
       onCloseCallback();

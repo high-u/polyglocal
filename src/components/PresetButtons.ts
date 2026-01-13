@@ -35,11 +35,12 @@ const renderButtons = (
   };
 
   return div(
-    { class: 'preset-buttons' },
+    { class: 'flex gap-s' },
     ...presets.map((p) =>
       button(
         {
-          class: 'button-primary',
+          class:
+            'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
           onclick: () => handleClick(p),
         },
         p.name,
