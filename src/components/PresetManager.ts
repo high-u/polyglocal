@@ -7,8 +7,8 @@ import {
   updatePreset,
 } from '../services/reasoningPreset';
 import { listCachedModels } from '../services/wllama';
-import { createModalWindow } from './ModalWindow';
-import { createModelsManager } from './ModelsManager';
+
+
 
 const { div, button, input, textarea, select, option, ul, li, span } = tags;
 
@@ -17,8 +17,7 @@ const CONTEXT_LENGTH_OPTIONS = [
 ];
 
 export const createPresetManager = () => {
-  const modelsModal = createModalWindow();
-  const modelsManager = createModelsManager();
+
 
   return () => {
     let editId: string | undefined;
@@ -128,21 +127,7 @@ export const createPresetManager = () => {
 
     return div(
       { class: 'flex-col gap-m p-y-m' },
-      button(
-        {
-          class:
-            'text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
-          onclick: () => {
-            modelsModal.show(modelsManager(), {
-              onClose: () => {
-                updateModelOptions();
-                updateList();
-              },
-            });
-          },
-        },
-        'Manage Models',
-      ),
+
       div(
         { class: 'flex-col gap-s' },
         modelSelect,
@@ -192,7 +177,7 @@ export const createPresetManager = () => {
         ),
       ),
       div({ id: 'preset-list' }),
-      modelsModal(),
+
     );
   };
 };

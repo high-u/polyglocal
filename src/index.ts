@@ -3,6 +3,8 @@ import { mount, tags } from '@twiqjs/twiq';
 import { createModalWindow } from './components/ModalWindow';
 import { createPresetButtons } from './components/PresetButtons';
 import { createPresetManager } from './components/PresetManager';
+import { createModelsManager } from './components/ModelsManager';
+import { createModelsManagerButton } from './components/ModelsManagerButton';
 import { createPresetManagerButton } from './components/PresetManagerButton';
 import { createTranslationInput } from './components/TranslationInput';
 import { createTranslationOutput } from './components/TranslationOutput';
@@ -20,12 +22,21 @@ const presetButtons = createPresetButtons({
 const presetModal = createModalWindow();
 const presetManagerFactory = createPresetManager();
 
+
 const presetManagerButton = createPresetManagerButton({
   modal: presetModal,
   getPresetContent: presetManagerFactory,
   onModalClose: () => {
     presetButtons.refresh();
   },
+});
+
+const modelsModal = createModalWindow();
+const modelsManagerFactory = createModelsManager();
+
+const modelsManagerButton = createModelsManagerButton({
+  modal: modelsModal,
+  getContent: modelsManagerFactory,
 });
 
 const App = () => {
@@ -49,6 +60,7 @@ const App = () => {
           'POLYGLOCAL',
         ),
         presetManagerButton(),
+        modelsManagerButton(),
       ),
       div({ id: 'preset-buttons-root' }, presetButtons()),
       div(
@@ -60,6 +72,7 @@ const App = () => {
       ),
 
       presetModal(),
+      modelsModal(),
     ),
   );
 };
