@@ -1,6 +1,8 @@
 import './style.css';
 import { mount, tags } from '@twiqjs/twiq';
 import { createModalWindow } from './components/ModalWindow';
+import { createModelsManager } from './components/ModelsManager';
+import { createModelsManagerButton } from './components/ModelsManagerButton';
 import { createPresetButtons } from './components/PresetButtons';
 import { createPresetManager } from './components/PresetManager';
 import { createPresetManagerButton } from './components/PresetManagerButton';
@@ -28,6 +30,14 @@ const presetManagerButton = createPresetManagerButton({
   },
 });
 
+const modelsModal = createModalWindow();
+const modelsManagerFactory = createModelsManager();
+
+const modelsManagerButton = createModelsManagerButton({
+  modal: modelsModal,
+  getContent: modelsManagerFactory,
+});
+
 const App = () => {
   return div(
     {
@@ -44,22 +54,26 @@ const App = () => {
         },
         div(
           {
-            class: 'text-yin-2 grow p-y-xs',
+            id: 'logo',
+            class: 'text-yin-2 grow',
           },
-          'POLYGLOCAL',
+          'Polyglocal',
         ),
+        modelsManagerButton(),
         presetManagerButton(),
       ),
-      div({ id: 'preset-buttons-root' }, presetButtons()),
+      //div({ id: 'preset-buttons-root' }, presetButtons()),
       div(
         {
           class: 'flex-col gap-s grow',
         },
+        presetButtons(),
         translationInput(),
         translationOutput(),
       ),
 
       presetModal(),
+      modelsModal(),
     ),
   );
 };

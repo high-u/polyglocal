@@ -40,7 +40,7 @@ const renderButtons = (
       button(
         {
           class:
-            'grow text-yin-2 bg-yin-7 border-yin-6 pointer round-s p-x-m p-y-xs',
+            'grow text-yin-2 bg-yin-7 border-yin-7 pointer round-s p-x-s',
           onclick: () => handleClick(p),
         },
         p.name,

@@ -2,17 +2,17 @@ import { tags } from '@twiqjs/twiq';
 
 const { button } = tags;
 
-type PresetManagerButtonProps = {
+type ModelsManagerButtonProps = {
   modal: {
     show: (content: HTMLElement, options?: { onClose?: () => void }) => void;
   };
-  getPresetContent: () => HTMLElement;
+  getContent: () => HTMLElement;
   onModalClose?: () => void;
 };
 
-export const createPresetManagerButton = (props: PresetManagerButtonProps) => {
+export const createModelsManagerButton = (props: ModelsManagerButtonProps) => {
   const handleClick = () => {
-    const content = props.getPresetContent();
+    const content = props.getContent();
     props.modal.show(content, {
       onClose: props.onModalClose,
     });
@@ -24,7 +24,7 @@ export const createPresetManagerButton = (props: PresetManagerButtonProps) => {
         class: 'bg-yin-7 pointer border-yin-7 text-yin-2 round-s p-x-s',
         onclick: handleClick,
       },
-      'Presets',
+      'Models',
     );
   };
 

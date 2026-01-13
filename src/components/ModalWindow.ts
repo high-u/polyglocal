@@ -16,13 +16,15 @@ export const createModalWindow = () => {
         { class: 'modal-window p-m bg-yin-9' },
         div(
           {},
-          button(
-            {
-              class:
-                'text-yin-1 bg-yin-8 border-yin-7 pointer round-s p-x-m p-y-xs',
-              onclick: () => render.close(),
-            },
-            'Close',
+          div({ class: 'text-align-right' },
+            button(
+              {
+                class:
+                  'text-yin-1 bg-yin-7 border-yin-7 pointer round-s p-x-s',
+                onclick: () => render.close(),
+              },
+              'Close',
+            ),
           ),
           content,
         ),
